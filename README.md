@@ -40,7 +40,7 @@ git clone https://github.com/yourusername/zotero-uploader.git
 cd zotero-uploader
 
 # Install dependencies
-pip install -r requirements.txt
+uv pip install requests fire pyzotero playwright pypdf2 loguru
 
 # Install Playwright browsers
 playwright install chromium
