@@ -81,7 +81,7 @@ class ZoteroUploader:
         api_key = api_key or os.environ.get("ZOTERO_API_KEY")
         library_id = library_id or os.environ.get("ZOTERO_LIBRARY_ID")
         library_type = library_type or os.environ.get("ZOTERO_LIBRARY_TYPE")
-        collection = collection or os.environ.get("ZOTERO_COLLECTION")
+        # No environment fallback for collection - only use collection_name
 
         self.url = url
         self.pdf_path = pdf_path
@@ -90,7 +90,7 @@ class ZoteroUploader:
         self.api_key = api_key
         self.library_id = library_id
         self.library_type = library_type
-        self.collection = collection  
+        self.collection = collection
         self.collection_name = collection_name or os.environ.get("ZOTERO_COLLECTION_NAME")
         self.verbose = verbose
         
@@ -136,8 +136,8 @@ class ZoteroUploader:
             parent_resp, attachment_resp = self.pdf_to_zotero()
             parent_key = extract_key(parent_resp)
             
-            # Add to collection if specified by key or name
-            if self.collection or self.collection_name:
+            # Add to collection if specified by name
+            if self.collection_name:
                 self.add_to_collection(parent_key)
                 
             print(f"✓ Item created with key: {parent_key}")
@@ -146,8 +146,8 @@ class ZoteroUploader:
             parent_resp, attachment_resp = self.url_to_zotero()
             parent_key = extract_key(parent_resp)
             
-            # Add to collection if specified by key or name
-            if self.collection or self.collection_name:
+            # Add to collection if specified by name
+            if self.collection_name:
                 self.add_to_collection(parent_key)
                 
             print(f"✓ Webpage item created with key: {parent_key}")
@@ -564,10 +564,10 @@ class ZoteroUploader:
         Returns:
             True if successful, False otherwise
         """
-        # Determine which collection key to use
+        # If we have a collection key directly provided, use it
         collection_key = self.collection
         
-        # If we have a collection name but no key, try to find the key by name
+        # If we have a collection name, try to find the key by name
         if not collection_key and self.collection_name:
             collection_key = self.find_collection_by_name(self.collection_name)
             if not collection_key:

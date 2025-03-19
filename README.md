@@ -82,7 +82,6 @@ You can set default values using environment variables:
 export ZOTERO_API_KEY="your_api_key"
 export ZOTERO_LIBRARY_ID="your_library_id"
 export ZOTERO_LIBRARY_TYPE="user"
-export ZOTERO_COLLECTION="collection_key"
 export ZOTERO_COLLECTION_NAME="collection_name"
 ```
 
