@@ -43,7 +43,7 @@ cd zotero-uploader
 uv pip install requests fire pyzotero playwright pypdf2 loguru
 
 # Install Playwright browsers
-playwright install chromium
+playwright install
 ```
 
 ## Usage
