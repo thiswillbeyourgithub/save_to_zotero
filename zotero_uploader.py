@@ -759,7 +759,7 @@ class ZoteroUploader:
             print("⚠️ Failed to create web snapshot via Zotero Connector")
             return False
     
-    def link_snapshot_to_parent(self, url: str, parent_key: str, max_attempts: int = 3) -> bool:
+    def link_snapshot_to_parent(self, url: str, parent_key: str, max_attempts: int = 5) -> bool:
         """
         Find a recently created snapshot and link it to the specified parent item.
         
@@ -777,14 +777,20 @@ class ZoteroUploader:
         # Make multiple attempts as the snapshot might not be immediately available
         for attempt in range(max_attempts):
             try:
-                # Get recent items
-                items = self.zot.items(limit=20, sort="dateAdded", direction="desc")
+                # Get recent items - increase limit to improve chances of finding it
+                items = self.zot.items(limit=50, sort="dateAdded", direction="desc")
                 
                 # Look for a snapshot matching our URL
+                snapshots_found = 0
                 for item in items:
                     item_data = item.get("data", {})
                     item_url = item_data.get("url", "")
                     item_type = item_data.get("itemType", "")
+                    
+                    # For debugging - count how many snapshots we're finding
+                    if item_type in ["webpage", "attachment"] and item_url == url:
+                        snapshots_found += 1
+                        logger.debug(f"Found snapshot match #{snapshots_found}: key={item_data.get('key')}, hasParent={'parentItem' in item_data}")
                     
                     # Check if this is a snapshot matching our URL
                     if (item_type in ["webpage", "attachment"] and 
@@ -799,21 +805,37 @@ class ZoteroUploader:
                         item_data["parentItem"] = parent_key
                         
                         # Update the item
-                        self.zot.update_item(item)
+                        update_response = self.zot.update_item(item)
+                        logger.debug(f"Update response: {update_response}")
                         logger.info(f"Successfully linked snapshot to parent: {parent_key}")
                         print(f"✓ Linked web snapshot to parent item")
                         return True
                 
+                # Log how many snapshots we found in this attempt
+                logger.debug(f"Attempt {attempt+1}: Found {snapshots_found} snapshots matching URL, none without parents")
+                
                 # If not found, wait before trying again
                 if attempt < max_attempts - 1:
-                    logger.info(f"Snapshot not found, waiting before retry (attempt {attempt+1}/{max_attempts})")
-                    time.sleep(2)  # Wait longer between attempts
+                    # Increase wait time with each attempt
+                    wait_time = 2 + attempt  # 2, 3, 4, 5, 6 seconds
+                    logger.info(f"Snapshot without parent not found, waiting {wait_time}s before retry (attempt {attempt+1}/{max_attempts})")
+                    time.sleep(wait_time)
             
             except Exception as e:
                 logger.error(f"Error linking snapshot to parent: {e}")
+                # Log more detailed error info
+                import traceback
+                logger.debug(f"Error details: {traceback.format_exc()}")
+                
+                # Still try the remaining attempts
+                if attempt < max_attempts - 1:
+                    time.sleep(2)
+                    continue
                 return False
         
-        logger.warning(f"Could not find snapshot to link after {max_attempts} attempts")
+        # If we get here, we've exhausted all attempts
+        logger.warning(f"Could not find snapshot without parent after {max_attempts} attempts")
+        print("⚠️ Note: Web snapshot was created but couldn't be linked to the parent item")
         return False
 
 
