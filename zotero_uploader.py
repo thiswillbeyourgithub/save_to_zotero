@@ -9,7 +9,7 @@ import tempfile
 import subprocess
 import time
 from datetime import datetime
-from typing import Dict, Optional, Tuple, Any, Union, List
+from typing import Dict, Optional, Tuple, Any, Union, List, bool
 import requests
 import fire
 from pyzotero import zotero
@@ -141,9 +141,14 @@ class ZoteroUploader:
                 self.add_to_collection(parent_key)
                 
             print(f"✓ Item created with key: {parent_key}")
+            
+            # Create snapshot if URL was provided
+            if self.url:
+                self.create_zotero_snapshot(self.url, title=os.path.basename(self.pdf_path))
         else:
             logger.info(f"Saving {self.url} to Zotero...")
-            parent_resp, attachment_resp = self.url_to_zotero()
+            # Store the title returned from url_to_zotero so we can use it for the snapshot
+            parent_resp, attachment_resp, webpage_title = self.url_to_zotero()
             parent_key = extract_key(parent_resp)
             
             # Add to collection if specified by name
@@ -151,6 +156,9 @@ class ZoteroUploader:
                 self.add_to_collection(parent_key)
                 
             print(f"✓ Webpage item created with key: {parent_key}")
+            
+            # Create snapshot through Zotero connector
+            self.create_zotero_snapshot(self.url, title=webpage_title)
 
         assert (
             "success" in attachment_resp and attachment_resp["success"]
@@ -381,7 +389,7 @@ class ZoteroUploader:
     def url_to_zotero(
         self,
         storage_dir: str = None,
-    ) -> Tuple[Dict, Dict]:
+    ) -> Tuple[Dict, Dict, str]:
         """
         Process a URL and add it to Zotero with PDF attachment.
 
@@ -389,7 +397,7 @@ class ZoteroUploader:
             storage_dir: Path to directory where PDFs should be saved (optional)
 
         Returns:
-            Tuple containing (parent item response, attachment response)
+            Tuple containing (parent item response, attachment response, webpage title)
         """
         if not self.storage_dir:
             raise ValueError("self.storage_dir is required")
@@ -473,8 +481,8 @@ class ZoteroUploader:
 
             print(f"✓ PDF moved to Zotero storage: {final_pdf_path}")
 
-        # Return the responses
-        return parent_resp, attach_resp
+        # Return the responses and title
+        return parent_resp, attach_resp, title
 
     def pdf_to_zotero(self) -> Tuple[Dict, Dict]:
         """
@@ -684,6 +692,64 @@ class ZoteroUploader:
         except Exception as e:
             logger.error(f"Error moving PDF to Zotero storage: {e}")
             return pdf_path
+            
+    def create_zotero_snapshot(self, url: str, title: Optional[str] = None) -> bool:
+        """
+        Create a Zotero snapshot of a webpage using the Zotero Connector API.
+        This is called after the PDF is added to provide an HTML snapshot in addition to the PDF.
+        
+        Args:
+            url: The URL of the webpage to snapshot
+            title: The title of the webpage (optional)
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        # Skip if no URL provided
+        if not url:
+            logger.debug("No URL provided, skipping snapshot creation")
+            return False
+            
+        # Try to connect to the Zotero Connector
+        connector_url = "http://127.0.0.1:23119/connector/saveSnapshot"
+        
+        # Prepare the request payload
+        payload = {
+            "url": url,
+        }
+        
+        # Add title if provided
+        if title:
+            payload["title"] = title
+            
+        try:
+            logger.info(f"Creating Zotero snapshot for URL: {url}")
+            response = requests.post(
+                connector_url,
+                headers={"Content-Type": "application/json"},
+                data=json.dumps(payload),
+                timeout=5  # Short timeout, we don't want to block for too long
+            )
+            
+            if response.status_code == 200:
+                response_data = response.json()
+                logger.info(f"Zotero snapshot created successfully: {response_data}")
+                print(f"✓ Web snapshot created via Zotero Connector")
+                return True
+            else:
+                logger.warning(f"Failed to create Zotero snapshot: HTTP {response.status_code}")
+                logger.debug(f"Response: {response.text}")
+                print("⚠️ Could not create web snapshot via Zotero Connector (is Zotero running?)")
+                return False
+                
+        except requests.exceptions.ConnectionError:
+            logger.warning("Could not connect to Zotero Connector. Is Zotero running?")
+            print("⚠️ Could not connect to Zotero Connector (is Zotero running?)")
+            return False
+        except Exception as e:
+            logger.warning(f"Error creating Zotero snapshot: {e}")
+            print("⚠️ Failed to create web snapshot via Zotero Connector")
+            return False
 
 
 if __name__ == "__main__":
