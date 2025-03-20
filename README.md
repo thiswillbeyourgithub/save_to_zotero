@@ -111,7 +111,7 @@ This project is licensed under the GNU General Public License v3.0 - see the LIC
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are very much welcome! We actively encourage the community to submit Pull Requests for any of the roadmap items or your own ideas. Whether it's fixing bugs, improving documentation, or implementing new features, your contributions will help make this project better for everyone.
 
 ## Roadmap
 
