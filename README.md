@@ -112,3 +112,16 @@ This project is licensed under the GNU General Public License v3.0 - see the LIC
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Roadmap
+
+Future plans for Zotero Uploader include:
+
+- **PyPI Installation**: Package the tool for easy installation via pip with `pip install zotero-uploader`
+- **CLI Tool via uvx**: Create a streamlined command-line interface using uvx for improved user experience
+- **HTML Snapshot Support**: Add functionality to save the original HTML of webpages alongside the PDF
+- **Batch Processing**: Support for processing multiple URLs or PDFs in a single command
+- **Custom PDF Templates**: Allow users to define custom styling for PDF output
+- **Integration with Reference Managers**: Extend support beyond Zotero to other reference management systems
+
+If you'd like to contribute to any of these initiatives, please check the issues page or open a new discussion.
