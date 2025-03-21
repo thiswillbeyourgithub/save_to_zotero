@@ -732,7 +732,7 @@ class ZoteroUploader:
                 timeout=5  # Short timeout, we don't want to block for too long
             )
             
-            if response.status_code in [200, 201]:
+            if response.status_code == 200:
                 response_data = response.json()
                 logger.info(f"Zotero snapshot created successfully: {response_data}")
                 print(f"✓ Web snapshot created via Zotero Connector")
