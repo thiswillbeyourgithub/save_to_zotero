@@ -44,8 +44,7 @@ git clone https://github.com/yourusername/zotero-uploader.git
 cd zotero-uploader
 
 # Install dependencies
-uv pip install requests fire playwright pypdf2 loguru
-uv pip install -U git+https://github.com/urschrei/pyzotero # see https://github.com/urschrei/pyzotero/pull/221
+uv pip install requests fire playwright pypdf2 loguru pyzotero>=1.6.11
 
 # Install Playwright browsers
 playwright install
