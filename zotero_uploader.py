@@ -9,7 +9,7 @@ import tempfile
 import subprocess
 import time
 from datetime import datetime
-from typing import Dict, Optional, Tuple, Any, Union, List
+from typing import Dict, Optional, Tuple, Any, Union, List, bool
 import requests
 import fire
 from pyzotero import zotero
@@ -142,9 +142,9 @@ class ZoteroUploader:
                 
             print(f"✓ Item created with key: {parent_key}")
             
-            # Create snapshot if URL was provided and link to parent
+            # Create snapshot if URL was provided
             if self.url:
-                self.create_zotero_snapshot(self.url, title=os.path.basename(self.pdf_path), parent_key=parent_key)
+                self.create_zotero_snapshot(self.url, title=os.path.basename(self.pdf_path))
         else:
             logger.info(f"Saving {self.url} to Zotero...")
             # Store the title returned from url_to_zotero so we can use it for the snapshot
@@ -157,8 +157,8 @@ class ZoteroUploader:
                 
             print(f"✓ Webpage item created with key: {parent_key}")
             
-            # Create snapshot through Zotero connector and link to parent
-            self.create_zotero_snapshot(self.url, title=webpage_title, parent_key=parent_key)
+            # Create snapshot through Zotero connector
+            self.create_zotero_snapshot(self.url, title=webpage_title)
 
         assert (
             "success" in attachment_resp and attachment_resp["success"]
@@ -693,7 +693,7 @@ class ZoteroUploader:
             logger.error(f"Error moving PDF to Zotero storage: {e}")
             return pdf_path
             
-    def create_zotero_snapshot(self, url: str, title: Optional[str] = None, parent_key: Optional[str] = None) -> bool:
+    def create_zotero_snapshot(self, url: str, title: Optional[str] = None) -> bool:
         """
         Create a Zotero snapshot of a webpage using the Zotero Connector API.
         This is called after the PDF is added to provide an HTML snapshot in addition to the PDF.
@@ -701,7 +701,6 @@ class ZoteroUploader:
         Args:
             url: The URL of the webpage to snapshot
             title: The title of the webpage (optional)
-            parent_key: The Zotero parent item key to attach the snapshot to (optional)
             
         Returns:
             True if successful, False otherwise
@@ -736,13 +735,6 @@ class ZoteroUploader:
                 response_data = response.json()
                 logger.info(f"Zotero snapshot created successfully: {response_data}")
                 print(f"✓ Web snapshot created via Zotero Connector")
-                
-                # If parent_key is provided, find the snapshot and set its parent
-                if parent_key:
-                    # Wait a moment for Zotero to process the snapshot
-                    time.sleep(1)
-                    self.link_snapshot_to_parent(url, parent_key)
-                    
                 return True
             else:
                 logger.warning(f"Failed to create Zotero snapshot: HTTP {response.status_code}")
@@ -758,63 +750,6 @@ class ZoteroUploader:
             logger.warning(f"Error creating Zotero snapshot: {e}")
             print("⚠️ Failed to create web snapshot via Zotero Connector")
             return False
-    
-    def link_snapshot_to_parent(self, url: str, parent_key: str, max_attempts: int = 3) -> bool:
-        """
-        Find a recently created snapshot and link it to the specified parent item.
-        
-        Args:
-            url: The URL of the snapshot to find
-            parent_key: The parent item key to link the snapshot to
-            max_attempts: Maximum number of attempts to find the snapshot
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        logger.info(f"Searching for snapshot with URL: {url}")
-        logger.info(f"To link to parent with key: {parent_key}")
-        
-        # Make multiple attempts as the snapshot might not be immediately available
-        for attempt in range(max_attempts):
-            try:
-                # Get recent items
-                items = self.zot.items(limit=20, sort="dateAdded", direction="desc")
-                
-                # Look for a snapshot matching our URL
-                for item in items:
-                    item_data = item.get("data", {})
-                    item_url = item_data.get("url", "")
-                    item_type = item_data.get("itemType", "")
-                    
-                    # Check if this is a snapshot matching our URL
-                    if (item_type in ["webpage", "attachment"] and 
-                        item_url == url and 
-                        "parentItem" not in item_data):  # Not already a child
-                        
-                        # This is likely our snapshot, set its parent
-                        item_key = item_data.get("key")
-                        logger.info(f"Found snapshot with key: {item_key}")
-                        
-                        # Set the parent item
-                        item_data["parentItem"] = parent_key
-                        
-                        # Update the item
-                        self.zot.update_item(item)
-                        logger.info(f"Successfully linked snapshot to parent: {parent_key}")
-                        print(f"✓ Linked web snapshot to parent item")
-                        return True
-                
-                # If not found, wait before trying again
-                if attempt < max_attempts - 1:
-                    logger.info(f"Snapshot not found, waiting before retry (attempt {attempt+1}/{max_attempts})")
-                    time.sleep(2)  # Wait longer between attempts
-            
-            except Exception as e:
-                logger.error(f"Error linking snapshot to parent: {e}")
-                return False
-        
-        logger.warning(f"Could not find snapshot to link after {max_attempts} attempts")
-        return False
 
 
 if __name__ == "__main__":
