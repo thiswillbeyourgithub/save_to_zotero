@@ -704,8 +704,8 @@ class ZoteroUploader:
                 timeout=30
             )
             
-            if response.status_code == 200:
-                logger.info("Snapshot saved successfully")
+            if response.status_code in [200, 201]:
+                logger.info(f"Snapshot saved successfully (status code: {response.status_code})")
                 logger.debug(f"Snapshot response: {response.text}")
                 
                 # Parse the response
