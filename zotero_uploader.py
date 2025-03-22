@@ -171,8 +171,9 @@ class ZoteroUploader:
 
             # now that we updated and moved the attachment we can delete
             # the now empty item with url localhost
-            # empty = self.zot.item(self.find_item_by_url(local_url, itemType="webpage"))
-            # self.zot.delete_item(empty)
+            empty = self.zot.item(self.find_item_by_url(local_url, itemType="webpage"))
+            if empty["meta"]["numChildren"] == 0:
+                self.zot.delete_item(empty)
 
             print(f"✓ Webpage item created with key: {webpage_key} with PDF attachment")
 
