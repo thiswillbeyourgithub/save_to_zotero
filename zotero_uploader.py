@@ -140,10 +140,6 @@ class ZoteroUploader:
             parent_resp, attachment_resp = self.pdf_to_zotero()
             parent_key = extract_key(parent_resp)
 
-            # Add to collection if specified by name
-            if self.collection_name:
-                self.add_to_collection(parent_key)
-
             print(f"✓ Item created with key: {parent_key}")
         else:
             logger.info(f"Saving {self.url} to Zotero...")
@@ -178,10 +174,6 @@ class ZoteroUploader:
                 logger.info(f"Attaching PDF to snapshot item: {parent_key}")
                 attachment_resp = self.zot.attachment_simple([str(new_pdf_path)], parent_key)
 
-                # Add to collection if specified by name
-                if self.collection_name:
-                    self.add_to_collection(parent_key)
-
                 print(f"✓ Webpage item created with key: {parent_key} with PDF attachment")
 
                 # extract the key and move to storage
@@ -192,11 +184,11 @@ class ZoteroUploader:
                 parent_resp, attachment_resp = self.url_to_zotero()
                 parent_key = extract_key(parent_resp)
 
-                # Add to collection if specified by name
-                if self.collection_name:
-                    self.add_to_collection(parent_key)
-
                 print(f"✓ Webpage item created with key: {parent_key}")
+
+        # Add to collection if specified by name
+        if self.collection_name:
+            self.add_to_collection(parent_key)
 
         assert (
             "success" in attachment_resp and attachment_resp["success"]
