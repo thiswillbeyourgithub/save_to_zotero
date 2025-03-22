@@ -747,10 +747,10 @@ class ZoteroUploader:
         except RequestException as e:
             logger.error(f"Error connecting to Zotero: {e}")
             # This usually means Zotero is not running
-            return None
+            raise
         except Exception as e:
             logger.error(f"Unexpected error saving snapshot: {e}")
-            return None
+            raise
 
     def find_item_by_url(self, url: str, max_attempts: int = 3, delay: float = 5.0) -> Optional[str]:
         """
