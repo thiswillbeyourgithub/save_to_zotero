@@ -1,6 +1,7 @@
 # Zotero Uploader
 
 A powerful command-line tool for saving webpages as high-quality PDFs and adding them to your Zotero library with proper metadata. Also supports adding existing PDF files to Zotero.
+**WARNING: THIS IS A WORK IN PROGRESS**
 
 ## Personal Motivation
 
