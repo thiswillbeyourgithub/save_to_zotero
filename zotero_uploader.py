@@ -767,7 +767,7 @@ class ZoteroUploader:
             logger.error(f"Unexpected error saving snapshot: {e}")
             return None
             
-    def find_item_by_url(self, url: str, max_attempts: int = 3, delay: float = 1.0) -> Optional[str]:
+    def find_item_by_url(self, url: str, max_attempts: int = 3, delay: float = 5.0) -> Optional[str]:
         """
         Find a recently added Zotero item by its URL.
         
