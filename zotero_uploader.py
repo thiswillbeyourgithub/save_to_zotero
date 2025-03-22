@@ -146,11 +146,10 @@ class ZoteroUploader:
 
             if self.use_snapshot:
                 # Try to use Zotero's saveSnapshot API first
-                parent_key = self.save_url_with_snapshot()
+                self.save_url_with_snapshot()
 
-                # Successfully saved with snapshot
                 # Now also save the PDF as an attachment to this snapshot
-                logger.info(f"Creating PDF attachment for snapshot with key: {parent_key}")
+                logger.info(f"Creating PDF attachment for snapshot")
 
                 # Use a temporary directory to store the PDF before attaching
                 pdf_dir = Path(self.storage_dir) / "ZoteroUploader"
@@ -169,6 +168,12 @@ class ZoteroUploader:
                 new_filename = f"{sanitized_title}_{self.domain}.pdf"
                 new_pdf_path = pdf_dir / new_filename
                 pdf_path.rename(new_pdf_path)
+
+                # When saving thee snapshot the response
+                # doesn't include the item key, so we need to find it
+                # by searching for recently added items with this URL
+                parent_key = self.find_item_by_url(self.url)
+                logger.info(f"Found item with key: {parent_key}")
 
                 # Attach the PDF to the parent item
                 logger.info(f"Attaching PDF to snapshot item: {parent_key}")
@@ -651,7 +656,7 @@ class ZoteroUploader:
             return False
 
 
-    def save_url_with_snapshot(self) -> Optional[str]:
+    def save_url_with_snapshot(self):
         """
         Save a URL using Zotero connector's saveSnapshot API.
 
@@ -720,13 +725,6 @@ class ZoteroUploader:
 
                 # Parse the response
                 snapshot_data = response.json()
-
-                # The response doesn't include the item key, so we need to find it
-                # by searching for recently added items with this URL
-                parent_key = self.find_item_by_url(self.url)
-
-                logger.info(f"Found item with key: {parent_key}")
-                return parent_key
 
         except RequestException as e:
             logger.error(f"Error connecting to Zotero: {e}")
