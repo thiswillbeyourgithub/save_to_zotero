@@ -764,6 +764,9 @@ class ZoteroUploader:
         Returns:
             The item key if found, None otherwise
         """
+        logger.info(f"Waiting {delay * 2}s for the snapshot to be created...")
+        time.sleep(delay * 2)
+
         # Sometimes it takes a moment for the item to appear in the Zotero database
         for attempt in range(max_attempts):
             try:
