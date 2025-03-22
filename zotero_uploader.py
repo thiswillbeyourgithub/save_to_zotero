@@ -149,7 +149,7 @@ class ZoteroUploader:
 
             if self.use_snapshot:
                 # Try to use Zotero's saveSnapshot API first
-                self.save_url_with_snapshot()
+                self.save_url_using_snapshot()
 
                 # Now also save the PDF as an attachment to this snapshot
                 logger.info(f"Creating PDF attachment for snapshot")
@@ -666,7 +666,7 @@ class ZoteroUploader:
             return False
 
 
-    def save_url_with_snapshot(self):
+    def save_url_using_snapshot(self):
         """
         Save a URL using Zotero connector's saveSnapshot API.
 
