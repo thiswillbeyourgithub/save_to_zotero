@@ -43,6 +43,8 @@ class ZoteroUploader:
     Class for uploading webpages to Zotero as PDF attachments.
     """
 
+    VERSION: str = "0.1.0"
+
     def __init__(
         self,
         url: Optional[str] = None,
