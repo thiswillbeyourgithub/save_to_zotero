@@ -388,23 +388,7 @@ class ZoteroUploader:
                 )
             except Exception as e:
                 logger.error(f"Error processing attachment: {e}")
-                logger.error(f"Attachment response: {attachment_response}")
-                # If we can find the key in the "unchanged" list, we can still proceed
-                if ("unchanged" in attachment_response and 
-                    isinstance(attachment_response["unchanged"], list) and 
-                    len(attachment_response["unchanged"]) > 0 and
-                    "key" in attachment_response["unchanged"][0]):
-
-                    attachment_key = attachment_response["unchanged"][0]["key"]
-                    logger.info(f"Using unchanged attachment key: {attachment_key}")
-
-                    # Move the file to Zotero storage
-                    self.move_pdf_to_zotero_storage(
-                        str(pdf_path_obj), attachment_key, title,
-                    )
-                else:
-                    # Re-raise the exception if we couldn't recover
-                    raise
+                raise
 
             # Get the attachment
             attachment_item = self.zot.item(attachment_key)
