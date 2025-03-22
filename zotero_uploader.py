@@ -337,7 +337,6 @@ class ZoteroUploader:
             # attachment_template['parentItem'] = parent_key
             #
             # # Use the create_items endpoint with the file path
-            # breakpoint()
             # attachment_response = self.zot.upload_attachments(
             #     [attachment_template],
             #     Path(abs_path).relative_to(Path.cwd()),
@@ -642,7 +641,6 @@ class ZoteroUploader:
                     return True
             else:
                 logger.error("Invalid item data structure returned from Zotero API")
-                breakpoint()
                 return False
             
             logger.debug(f"Collection addition response: {result}")
