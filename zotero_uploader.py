@@ -74,7 +74,7 @@ class ZoteroUploader:
         """
         if not url and not pdf_path:
             raise ValueError("Either url or pdf_path must be provided")
-        
+
         if url and pdf_path:
             logger.warning("Both URL and PDF path provided; PDF path will be used")
 
@@ -97,7 +97,7 @@ class ZoteroUploader:
         self.collection_name = collection_name or os.environ.get("ZOTERO_COLLECTION_NAME")
         self.verbose = verbose
         self.use_snapshot = use_snapshot
-        
+
         # Extract domain from URL for file naming or use filename for PDF
         if self.url:
             parsed_url = urlparse(self.url)
@@ -139,51 +139,51 @@ class ZoteroUploader:
             logger.info(f"Adding PDF {self.pdf_path} to Zotero...")
             parent_resp, attachment_resp = self.pdf_to_zotero()
             parent_key = extract_key(parent_resp)
-            
+
             # Add to collection if specified by name
             if self.collection_name:
                 self.add_to_collection(parent_key)
-                
+
             print(f"✓ Item created with key: {parent_key}")
         else:
             logger.info(f"Saving {self.url} to Zotero...")
-            
+
             if self.use_snapshot:
                 # Try to use Zotero's saveSnapshot API first
                 parent_key = self.save_url_with_snapshot()
-                
+
                 # Successfully saved with snapshot
                 # Now also save the PDF as an attachment to this snapshot
                 logger.info(f"Creating PDF attachment for snapshot with key: {parent_key}")
-                
+
                 # Use a temporary directory to store the PDF before attaching
                 pdf_dir = Path(self.storage_dir) / "ZoteroUploader"
                 pdf_dir.mkdir(parents=True, exist_ok=True)
-                
+
                 # Create a temporary filename
                 temp_filename = f"{self.domain}_{int(time.time())}.pdf"
                 pdf_path = pdf_dir / temp_filename
-                
+
                 # Save the webpage as PDF
                 title = save_webpage_as_pdf(self.url, str(pdf_path), self.wait)
-                
+
                 # Rename with better title
                 sanitized_title = "".join(c for c in title if c.isalnum() or c in " ._-").strip()
                 sanitized_title = sanitized_title[:50]  # Limit length
                 new_filename = f"{sanitized_title}_{self.domain}.pdf"
                 new_pdf_path = pdf_dir / new_filename
                 pdf_path.rename(new_pdf_path)
-                
+
                 # Attach the PDF to the parent item
                 logger.info(f"Attaching PDF to snapshot item: {parent_key}")
                 attachment_resp = self.zot.attachment_simple([str(new_pdf_path)], parent_key)
-                
+
                 # Add to collection if specified by name
                 if self.collection_name:
                     self.add_to_collection(parent_key)
-                
+
                 print(f"✓ Webpage item created with key: {parent_key} with PDF attachment")
-                
+
                 # extract the key and move to storage
                 attachment_key = extract_key(attachment_resp)
                 self.move_pdf_to_zotero_storage(str(new_pdf_path), attachment_key, title)
@@ -191,23 +191,23 @@ class ZoteroUploader:
                 # Use the original PDF method
                 parent_resp, attachment_resp = self.url_to_zotero()
                 parent_key = extract_key(parent_resp)
-                
+
                 # Add to collection if specified by name
                 if self.collection_name:
                     self.add_to_collection(parent_key)
-                    
+
                 print(f"✓ Webpage item created with key: {parent_key}")
 
         assert (
             "success" in attachment_resp and attachment_resp["success"]
         ) or ("unchanged" in attachment_resp and attachment_resp["unchanged"]), attachment_resp
         print(f"✓ PDF attachment added successfully")
-        
+
         if self.url:
             print(f"\nURL: {self.url}")
         else:
             print(f"\nPDF: {self.pdf_path}")
-            
+
         print("Item has been saved to your Zotero library.")
         logger.info("Successfully added to Zotero!")
 
@@ -250,10 +250,10 @@ class ZoteroUploader:
         if metadata:
             if "description" in metadata:
                 parent_item["abstractNote"] = metadata["description"]
-                
+
             if self.url and "domain" in metadata:
                 parent_item["websiteTitle"] = metadata["domain"]
-                
+
             if "author" in metadata:
                 # Add author if available
                 if parent_item["creators"][0]["creatorType"] == "author":
@@ -320,7 +320,7 @@ class ZoteroUploader:
                 error_msg = f"PDF file not found at {pdf_path_obj}"
                 logger.error(error_msg)
                 raise FileNotFoundError(error_msg)
-            
+
             logger.info(f"PDF size: {pdf_path_obj.stat().st_size} bytes")
 
             # # First try to use Zotero's registerAttachment API for better reliability
@@ -350,7 +350,7 @@ class ZoteroUploader:
             try:
                 attachment_response = self.zot.attachment_simple([pdf_path], parent_key)
                 logger.debug(f"attachment_simple response: {attachment_response}")
-                
+
                 # Check if response is empty or has no success field
                 if not attachment_response or "success" not in attachment_response:
                     logger.warning("Empty attachment response, trying alternate method")
@@ -360,11 +360,11 @@ class ZoteroUploader:
                     attachment_template["contentType"] = "application/pdf"
                     attachment_template["filename"] = pdf_filename
                     attachment_template["parentItem"] = parent_key
-                    
+
                     # First create the attachment item
                     created_item = self.zot.create_items([attachment_template])
                     logger.debug(f"Created attachment item: {created_item}")
-                    
+
                     # Then upload the file to that item
                     if "success" in created_item and created_item["success"]:
                         attachment_key = extract_key(created_item)
@@ -379,11 +379,11 @@ class ZoteroUploader:
             try:
                 attachment_key = extract_key(attachment_response)
                 logger.info(f"Created attachment with key: {attachment_key}")
-    
+
                 if not pdf_path_obj.exists():
                     logger.error(f"PDF file not found at: {pdf_path_obj}")
                     raise FileNotFoundError(f"PDF file not found: {pdf_path_obj}")
-    
+
                 # Move the file to Zotero storage if specified and we have a key
                 logger.info(f"Moving PDF to Zotero storage: {self.storage_dir}")
                 self.move_pdf_to_zotero_storage(
@@ -397,10 +397,10 @@ class ZoteroUploader:
                     isinstance(attachment_response["unchanged"], list) and 
                     len(attachment_response["unchanged"]) > 0 and
                     "key" in attachment_response["unchanged"][0]):
-                    
+
                     attachment_key = attachment_response["unchanged"][0]["key"]
                     logger.info(f"Using unchanged attachment key: {attachment_key}")
-                    
+
                     # Move the file to Zotero storage
                     self.move_pdf_to_zotero_storage(
                         str(pdf_path_obj), attachment_key, title,
@@ -524,24 +524,24 @@ class ZoteroUploader:
     def pdf_to_zotero(self) -> Tuple[Dict, Dict]:
         """
         Process a local PDF file and add it to Zotero.
-        
+
         Returns:
             Tuple containing (parent item response, attachment response)
         """
         if not self.pdf_path:
             raise ValueError("PDF path is required")
-        
+
         # Verify the PDF file exists and get absolute path
         pdf_path_obj = Path(self.pdf_path).resolve()
         if not pdf_path_obj.exists():
             raise FileNotFoundError(f"PDF file not found: {self.pdf_path}")
-            
+
         logger.info(f"Processing PDF: {pdf_path_obj}")
-        
+
         # Use the filename as the title if it's not obviously a temporary name
         filename = pdf_path_obj.name
         title = os.path.splitext(filename)[0]
-        
+
         # Try to get a better title by examining the PDF metadata
         try:
             with open(pdf_path_obj, 'rb') as f:
@@ -554,14 +554,14 @@ class ZoteroUploader:
                         logger.info(f"Extracted title from PDF metadata: {title}")
         except Exception as e:
             logger.warning(f"Could not extract PDF metadata: {e}")
-        
+
         # Create simple metadata
         metadata = {
             "title": title,
             "domain": self.domain,
             "accessDate": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
-        
+
         # Add to Zotero
         logger.info(f"Adding PDF to Zotero with title: {title}")
         parent_resp, attach_resp = self.add_to_zotero(
@@ -569,66 +569,66 @@ class ZoteroUploader:
             title,
             metadata,
         )
-        
+
         return parent_resp, attach_resp
-        
+
     def find_collection_by_name(self, name: str) -> Optional[str]:
         """
         Find a collection key by its name.
-        
+
         Args:
             name: The name of the collection to find
-            
+
         Returns:
             The collection key if found, None otherwise
         """
         try:
             logger.info(f"Searching for collection with name: {name}")
             collections = self.zot.collections()
-            
+
             for collection in collections:
                 if "data" in collection and "name" in collection["data"]:
                     if collection["data"]["name"] == name:
                         collection_key = collection["data"]["key"]
                         logger.info(f"Found collection '{name}' with key: {collection_key}")
                         return collection_key
-            
+
             logger.warning(f"Could not find collection with name: {name}")
             return None
         except Exception as e:
             logger.error(f"Error finding collection by name: {e}")
             return None
-    
+
     def add_to_collection(self, item_key: str) -> bool:
         """
         Add an item to the specified collection.
-        
+
         Args:
             item_key: The key of the item to add to the collection
-            
+
         Returns:
             True if successful, False otherwise
         """
         # If we have a collection key directly provided, use it
         collection_key = self.collection
-        
+
         # If we have a collection name, try to find the key by name
         if not collection_key and self.collection_name:
             collection_key = self.find_collection_by_name(self.collection_name)
             if not collection_key:
                 logger.warning(f"Could not find collection with name: {self.collection_name}")
                 return False
-        
+
         if not collection_key:
             logger.warning("No collection specified, skipping collection assignment")
             return False
-            
+
         try:
             logger.info(f"Adding item {item_key} to collection {collection_key}")
-            
+
             # Get the current item
             item = self.zot.item(item_key)
-            
+
             # Update the item's collections
             if "data" in item and "collections" in item["data"]:
                 # Make sure we're not adding a duplicate
@@ -642,9 +642,9 @@ class ZoteroUploader:
             else:
                 logger.error("Invalid item data structure returned from Zotero API")
                 return False
-            
+
             logger.debug(f"Collection addition response: {result}")
-            
+
             # Print appropriate message based on which collection identifier was used
             if self.collection_name and self.collection_name != collection_key:
                 logger.info(f"Successfully added to collection: {self.collection_name} ({collection_key})")
@@ -652,42 +652,42 @@ class ZoteroUploader:
             else:
                 logger.info(f"Successfully added to collection: {collection_key}")
                 print(f"✓ Added to collection: {collection_key}")
-            
+
             return True
         except Exception as e:
             logger.error(f"Error adding to collection: {e}")
             return False
-    
-    
+
+
     def save_url_with_snapshot(self) -> Optional[str]:
         """
         Save a URL using Zotero connector's saveSnapshot API.
-        
+
         This method communicates directly with the running Zotero instance
         via its connector API to save a webpage as a snapshot.
-        
+
         Returns:
             The parent item key if successful, None otherwise
         """
         if not self.url:
             logger.error("URL is required for saveSnapshot")
             return None
-            
+
         # Define the connector endpoint
         connector_url = "http://127.0.0.1:23119/connector/saveSnapshot"
-        
+
         # Prepare the payload
         payload = {
             "url": self.url,
             "title": None  # Will be auto-detected by Zotero
         }
-        
+
         # Extract domain from URL for metadata
         parsed_url = urlparse(self.url)
         domain = parsed_url.netloc
         if domain.startswith("www."):
             domain = domain[4:]
-            
+
         try:
             # Get the title using Playwright for better accuracy
             with sync_playwright() as p:
@@ -699,21 +699,21 @@ class ZoteroUploader:
                     title = page.title()
                     if title:
                         payload["title"] = title
-                    
+
                     # Get more metadata
                     metadata = get_webpage_metadata(page, self.url)
                     if "title" in metadata and metadata["title"]:
                         payload["title"] = metadata["title"]
-                        
+
                 finally:
                     browser.close()
         except Exception as e:
             logger.warning(f"Error getting page title with Playwright: {e}")
             # Continue without title, Zotero will attempt to detect it
-        
+
         logger.info(f"Using saveSnapshot to save {self.url}")
         logger.debug(f"Snapshot payload: {payload}")
-        
+
         try:
             # Make the request to the Zotero connector
             response = requests.post(
@@ -721,18 +721,18 @@ class ZoteroUploader:
                 json=payload,
                 timeout=30
             )
-            
+
             if response.status_code in [200, 201]:
                 logger.info(f"Snapshot saved successfully (status code: {response.status_code})")
                 logger.debug(f"Snapshot response: {response.text}")
-                
+
                 # Parse the response
                 snapshot_data = response.json()
-                
+
                 # The response doesn't include the item key, so we need to find it
                 # by searching for recently added items with this URL
                 parent_key = self.find_item_by_url(self.url)
-                
+
                 if parent_key:
                     logger.info(f"Found item with key: {parent_key}")
                     return parent_key
@@ -743,7 +743,7 @@ class ZoteroUploader:
                 logger.error(f"Snapshot save failed with status code: {response.status_code}")
                 logger.error(f"Response: {response.text}")
                 return None
-                
+
         except RequestException as e:
             logger.error(f"Error connecting to Zotero: {e}")
             # This usually means Zotero is not running
@@ -751,16 +751,16 @@ class ZoteroUploader:
         except Exception as e:
             logger.error(f"Unexpected error saving snapshot: {e}")
             return None
-            
+
     def find_item_by_url(self, url: str, max_attempts: int = 3, delay: float = 5.0) -> Optional[str]:
         """
         Find a recently added Zotero item by its URL.
-        
+
         Args:
             url: The URL to search for
             max_attempts: Maximum number of attempts to find the item
             delay: Delay between attempts in seconds
-            
+
         Returns:
             The item key if found, None otherwise
         """
@@ -783,10 +783,10 @@ class ZoteroUploader:
             except Exception as e:
                 logger.error(f"Error searching for item by URL: {e}")
                 break
-                
+
         logger.warning(f"Could not find item with URL: {url} after {max_attempts} attempts")
         return None
-    
+
     def move_pdf_to_zotero_storage(
         self, pdf_path: str, attachment_key: str, title: str,
     ) -> str:
