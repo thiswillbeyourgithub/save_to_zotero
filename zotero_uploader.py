@@ -12,6 +12,7 @@ from datetime import datetime
 from typing import Dict, Optional, Tuple, Any, Union, List
 import requests
 import fire
+import shutil
 from pyzotero import zotero
 from playwright.sync_api import sync_playwright
 from pathlib import Path
@@ -483,8 +484,6 @@ class ZoteroUploader:
         logger.info(f"Moving PDF to final Zotero storage location: {final_pdf_path}")
 
         if pdf_path.exists():
-            import shutil
-
             shutil.copy2(str(pdf_path), str(final_pdf_path))
 
             # Create a .zotero-ft-cache file to indicate it's been indexed
