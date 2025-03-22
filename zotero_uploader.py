@@ -3,6 +3,7 @@ Script to save webpages as PDFs and add them to Zotero.
 Uses playwright for PDF generation and pyzotero for Zotero integration.
 """
 
+import hashlib
 import json
 import os
 import tempfile
@@ -170,21 +171,46 @@ class ZoteroUploader:
                 new_pdf_path = pdf_dir / new_filename
                 pdf_path.rename(new_pdf_path)
 
-                # When saving thee snapshot the response
+                # When saving the snapshot the response
                 # doesn't include the item key, so we need to find it
                 # by searching for recently added items with this URL
                 parent_key = self.find_item_by_url(self.url)
-                logger.info(f"Found item with key: {parent_key}")
+                logger.info(f"Found snapshot with key: {parent_key}")
 
-                # Attach the PDF to the parent item
+                # Attach the PDF to the snapshot item
                 logger.info(f"Attaching PDF to snapshot item: {parent_key}")
-                attachment_resp = self.zot.attachment_simple([str(new_pdf_path)], parent_key)
+                shutil.copy2(str(new_pdf_path), str(Path.cwd() / new_pdf_path.name))
 
-                print(f"✓ Webpage item created with key: {parent_key} with PDF attachment")
+                # first: create the item
+                attachment_template = self.zot.item_template('attachment', 'imported_file')
+                attachment_template['title'] = f"{title} (PDF)"
+                attachment_template['contentType'] = 'application/pdf'
+                attachment_template['filename'] = new_pdf_path.name
+                attachment_template['url'] = self.url
+                attachment_template['parentItem'] = parent_key
+                digest = hashlib.md5()  # noqa: S324
+                with new_pdf_path.open("rb") as att:
+                    for chunk in iter(lambda: att.read(8192), b""):
+                        digest.update(chunk)
+                attachment_template["md5"] = digest.hexdigest()
+
+                attachment_resp = self.zot.create_items([attachment_template])
+                logger.debug(f"Create_items response: {attachment_resp}")
+
+                # # this upload method only works if not using webdav!
+                # # Use the create_items endpoint with the file path
+                # attachment_resp = self.zot.upload_attachments(
+                #     attachments=[attachment_template],
+                #     parentid=parent_key,
+                #     basedir=new_pdf_path.absolute().parent,
+                # )
+                # logger.debug(f"Upload_attachments response: {attachment_resp}")
 
                 # extract the key and move to storage
                 attachment_key = extract_key(attachment_resp)
                 self.move_pdf_to_zotero_storage(str(new_pdf_path), attachment_key, title)
+
+                print(f"✓ Webpage item created with key: {parent_key} with PDF attachment")
             else:
                 # Use the original PDF method
                 parent_resp, attachment_resp = self.url_to_zotero()
