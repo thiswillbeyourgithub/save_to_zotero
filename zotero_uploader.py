@@ -79,8 +79,7 @@ class ZoteroUploader:
         if not url and not pdf_path:
             raise ValueError("Either url or pdf_path must be provided")
 
-        if url and pdf_path:
-            logger.warning("Both URL and PDF path provided; PDF path will be used")
+        assert not pdf_path and url, "Must supply a url or a pdf but not both"
 
         # Make sure Zotero is running
         ensure_zotero_running()
