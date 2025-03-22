@@ -328,60 +328,106 @@ class ZoteroUploader:
         attachment_template["filename"] = pdf_filename
         attachment_template["url"] = ""  # Will be updated later
 
+        # Start a local HTTP server in a thread to serve the PDF
+        server_port = find_available_port(start_port=25852)
+        server = SimpleHTTPServerThread(pdf_dir, server_port)
+        server.start()
+
         attachment_response = {"success": {}, "failed": {}}
 
-        # Ensure the PDF file exists and log its size
-        if not pdf_path_obj.exists():
-            error_msg = f"PDF file not found at {pdf_path_obj}"
-            logger.error(error_msg)
-            raise FileNotFoundError(error_msg)
+        try:
+            local_url = f"http://localhost:{server_port}/{pdf_filename}"
+            logger.info(f"Serving PDF at: {local_url}")
 
-        logger.info(f"PDF size: {pdf_path_obj.stat().st_size} bytes")
+            # Ensure the PDF file exists and log its size
+            if not pdf_path_obj.exists():
+                error_msg = f"PDF file not found at {pdf_path_obj}"
+                logger.error(error_msg)
+                raise FileNotFoundError(error_msg)
 
-        # Use attachment_simple
-        attachment_response = self.zot.attachment_simple([pdf_path], parent_key)
-        logger.debug(f"attachment_simple response: {attachment_response}")
+            logger.info(f"PDF size: {pdf_path_obj.stat().st_size} bytes")
 
-        # Check if response is empty or has no success field
-        if not attachment_response or "success" not in attachment_response:
-            logger.warning("Empty attachment response, trying alternate method")
-            # Try alternative approach: create attachment item and then update it
-            attachment_template = self.zot.item_template("attachment", "imported_file")
-            attachment_template["title"] = f"{title} (PDF)"
-            attachment_template["contentType"] = "application/pdf"
-            attachment_template["filename"] = pdf_filename
-            attachment_template["parentItem"] = parent_key
+            # # First try to use Zotero's registerAttachment API for better reliability
+            # # Get proper path format for Zotero
+            # abs_path = str(pdf_path_obj.resolve())
+            # logger.info(f"Using absolute path for attachment: {abs_path}")
+            #
+            # # Create proper attachment item
+            # attachment_template = self.zot.item_template('attachment', 'imported_file')
+            # attachment_template['title'] = f"{title} (PDF)"
+            # attachment_template['contentType'] = 'application/pdf'
+            # attachment_template['filename'] = pdf_path_obj.name
+            # attachment_template['url'] = self.url  # Set the original URL
+            # attachment_template['parentItem'] = parent_key
+            #
+            # # Use the create_items endpoint with the file path
+            # attachment_response = self.zot.upload_attachments(
+            #     [attachment_template],
+            #     Path(abs_path).relative_to(Path.cwd()),
+            #     parent_key
+            # )
 
-            # First create the attachment item
-            created_item = self.zot.create_items([attachment_template])
-            logger.debug(f"Created attachment item: {created_item}")
+            # Fallback to direct API upload
+            logger.info("Using direct API upload")
 
-            # Then upload the file to that item
-            attachment_key = extract_key(created_item)
-            upload_response = self.zot.upload_attachment(attachment_key, pdf_path)
-            logger.debug(f"Upload attachment response: {upload_response}")
-            attachment_response = created_item  # Use the creation response
+            # Use attachment_simple as fallback
+            try:
+                attachment_response = self.zot.attachment_simple([pdf_path], parent_key)
+                logger.debug(f"attachment_simple response: {attachment_response}")
 
-        # After creating the attachment, get its key and move file to Zotero storage
-        attachment_key = extract_key(attachment_response)
-        logger.info(f"Created attachment with key: {attachment_key}")
+                # Check if response is empty or has no success field
+                if not attachment_response or "success" not in attachment_response:
+                    logger.warning("Empty attachment response, trying alternate method")
+                    # Try alternative approach: create attachment item and then update it
+                    attachment_template = self.zot.item_template("attachment", "imported_file")
+                    attachment_template["title"] = f"{title} (PDF)"
+                    attachment_template["contentType"] = "application/pdf"
+                    attachment_template["filename"] = pdf_filename
+                    attachment_template["parentItem"] = parent_key
 
-        if not pdf_path_obj.exists():
-            logger.error(f"PDF file not found at: {pdf_path_obj}")
-            raise FileNotFoundError(f"PDF file not found: {pdf_path_obj}")
+                    # First create the attachment item
+                    created_item = self.zot.create_items([attachment_template])
+                    logger.debug(f"Created attachment item: {created_item}")
 
-        # Move the file to Zotero storage if specified and we have a key
-        logger.info(f"Moving PDF to Zotero storage: {self.storage_dir}")
-        self.move_pdf_to_zotero_storage(
-            str(pdf_path_obj), attachment_key, title,
-        )
+                    # Then upload the file to that item
+                    if "success" in created_item and created_item["success"]:
+                        attachment_key = extract_key(created_item)
+                        upload_response = self.zot.upload_attachment(attachment_key, pdf_path)
+                        logger.debug(f"Upload attachment response: {upload_response}")
+                        attachment_response = created_item  # Use the creation response
+            except Exception as e:
+                logger.error(f"Error using attachment_simple: {str(e)}")
+                raise
 
-        # Get the attachment
-        attachment_item = self.zot.item(attachment_key)
-        # Update its URL if we have one
-        if self.url:
-            attachment_item["data"]["url"] = self.url
-            self.zot.update_item(attachment_item)
+            # After creating the attachment, get its key and move file to Zotero storage
+            try:
+                attachment_key = extract_key(attachment_response)
+                logger.info(f"Created attachment with key: {attachment_key}")
+
+                if not pdf_path_obj.exists():
+                    logger.error(f"PDF file not found at: {pdf_path_obj}")
+                    raise FileNotFoundError(f"PDF file not found: {pdf_path_obj}")
+
+                # Move the file to Zotero storage if specified and we have a key
+                logger.info(f"Moving PDF to Zotero storage: {self.storage_dir}")
+                self.move_pdf_to_zotero_storage(
+                    str(pdf_path_obj), attachment_key, title,
+                )
+            except Exception as e:
+                logger.error(f"Error processing attachment: {e}")
+                raise
+
+            # Get the attachment
+            attachment_item = self.zot.item(attachment_key)
+            # Update its URL if we have one
+            if self.url:
+                attachment_item["data"]["url"] = self.url
+                self.zot.update_item(attachment_item)
+
+        finally:
+            # Stop the HTTP server
+            logger.info("Stopping local HTTP server")
+            server.stop()
 
         return creation_response, attachment_response
 
