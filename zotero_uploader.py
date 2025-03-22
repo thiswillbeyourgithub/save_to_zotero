@@ -152,54 +152,41 @@ class ZoteroUploader:
                 # Try to use Zotero's saveSnapshot API first
                 parent_key = self.save_url_with_snapshot()
                 
-                if parent_key:
-                    # Successfully saved with snapshot
-                    # Now also save the PDF as an attachment to this snapshot
-                    logger.info(f"Creating PDF attachment for snapshot with key: {parent_key}")
-                    
-                    # Use a temporary directory to store the PDF before attaching
-                    pdf_dir = Path(self.storage_dir) / "ZoteroUploader"
-                    pdf_dir.mkdir(parents=True, exist_ok=True)
-                    
-                    # Create a temporary filename
-                    temp_filename = f"{self.domain}_{int(time.time())}.pdf"
-                    pdf_path = pdf_dir / temp_filename
-                    
-                    # Save the webpage as PDF
-                    title = save_webpage_as_pdf(self.url, str(pdf_path), self.wait)
-                    
-                    # Rename with better title
-                    sanitized_title = "".join(c for c in title if c.isalnum() or c in " ._-").strip()
-                    sanitized_title = sanitized_title[:50]  # Limit length
-                    new_filename = f"{sanitized_title}_{self.domain}.pdf"
-                    new_pdf_path = pdf_dir / new_filename
-                    pdf_path.rename(new_pdf_path)
-                    
-                    # Attach the PDF to the parent item
-                    logger.info(f"Attaching PDF to snapshot item: {parent_key}")
-                    attachment_resp = self.zot.attachment_simple([str(new_pdf_path)], parent_key)
-                    
-                    # Add to collection if specified by name
-                    if self.collection_name:
-                        self.add_to_collection(parent_key)
-                    
-                    print(f"✓ Webpage item created with key: {parent_key} with PDF attachment")
-                    
-                    # If attachment was successful, extract the key and move to storage
-                    if "success" in attachment_resp and attachment_resp["success"]:
-                        attachment_key = extract_key(attachment_resp)
-                        self.move_pdf_to_zotero_storage(str(new_pdf_path), attachment_key, title)
-                else:
-                    # Fall back to PDF method if snapshot failed
-                    logger.info("Snapshot save failed, falling back to PDF method...")
-                    parent_resp, attachment_resp = self.url_to_zotero()
-                    parent_key = extract_key(parent_resp)
-                    
-                    # Add to collection if specified by name
-                    if self.collection_name:
-                        self.add_to_collection(parent_key)
-                        
-                    print(f"✓ Webpage item created with key: {parent_key}")
+                # Successfully saved with snapshot
+                # Now also save the PDF as an attachment to this snapshot
+                logger.info(f"Creating PDF attachment for snapshot with key: {parent_key}")
+                
+                # Use a temporary directory to store the PDF before attaching
+                pdf_dir = Path(self.storage_dir) / "ZoteroUploader"
+                pdf_dir.mkdir(parents=True, exist_ok=True)
+                
+                # Create a temporary filename
+                temp_filename = f"{self.domain}_{int(time.time())}.pdf"
+                pdf_path = pdf_dir / temp_filename
+                
+                # Save the webpage as PDF
+                title = save_webpage_as_pdf(self.url, str(pdf_path), self.wait)
+                
+                # Rename with better title
+                sanitized_title = "".join(c for c in title if c.isalnum() or c in " ._-").strip()
+                sanitized_title = sanitized_title[:50]  # Limit length
+                new_filename = f"{sanitized_title}_{self.domain}.pdf"
+                new_pdf_path = pdf_dir / new_filename
+                pdf_path.rename(new_pdf_path)
+                
+                # Attach the PDF to the parent item
+                logger.info(f"Attaching PDF to snapshot item: {parent_key}")
+                attachment_resp = self.zot.attachment_simple([str(new_pdf_path)], parent_key)
+                
+                # Add to collection if specified by name
+                if self.collection_name:
+                    self.add_to_collection(parent_key)
+                
+                print(f"✓ Webpage item created with key: {parent_key} with PDF attachment")
+                
+                # extract the key and move to storage
+                attachment_key = extract_key(attachment_resp)
+                self.move_pdf_to_zotero_storage(str(new_pdf_path), attachment_key, title)
             else:
                 # Use the original PDF method
                 parent_resp, attachment_resp = self.url_to_zotero()
