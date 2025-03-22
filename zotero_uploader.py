@@ -733,16 +733,8 @@ class ZoteroUploader:
                 # by searching for recently added items with this URL
                 parent_key = self.find_item_by_url(self.url)
 
-                if parent_key:
-                    logger.info(f"Found item with key: {parent_key}")
-                    return parent_key
-                else:
-                    logger.warning("Could not find the newly created item in Zotero")
-                    return None
-            else:
-                logger.error(f"Snapshot save failed with status code: {response.status_code}")
-                logger.error(f"Response: {response.text}")
-                return None
+                logger.info(f"Found item with key: {parent_key}")
+                return parent_key
 
         except RequestException as e:
             logger.error(f"Error connecting to Zotero: {e}")
