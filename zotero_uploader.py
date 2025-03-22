@@ -93,7 +93,7 @@ class ZoteroUploader:
         self.url = url
         self.pdf_path = pdf_path
         self.wait = wait
-        self.storage_dir = storage_dir
+        self.storage_dir = Path(storage_dir)
         self.api_key = api_key
         self.library_id = library_id
         self.library_type = library_type
@@ -135,8 +135,8 @@ class ZoteroUploader:
         )
 
         # Ensure storage directory exists
-        os.makedirs(storage_dir, exist_ok=True)
-        logger.info(f"Using storage directory: {storage_dir}")
+        self.storage_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Using storage directory: {self.storage_dir}")
 
         # Process based on what was provided
         if self.pdf_path:
