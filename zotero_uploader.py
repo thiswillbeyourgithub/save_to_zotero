@@ -737,18 +737,23 @@ class ZoteroUploader:
         for attempt in range(max_attempts):
             try:
                 # Get recent items, sorted by date added (newest first)
-                items = self.zot.items(sort="dateAdded", direction="desc", limit=20)
-                
-                # Look for an item with the matching URL
-                for item in items:
-                    if "data" in item and "url" in item["data"] and item["data"]["url"] == url:
-                        return item["data"]["key"]
-                
+                items = self.zot.items(sort="dateAdded", direction="desc", limit=10)
+                # sort so that oldest items are first and latest are last
+                items = sorted(items, key=lambda x: datetime.fromisoformat(x["data"]["dateModified"].replace("Z", "+00:00")))
+                items = [item for item in items if "data" in item]
+                items = [item for item in items if "url" in item["data"]]
+                items = [item for item in items if item["data"]["url"] == url]
+                # keep only the webpage instead of the attachment
+                items = [item for item in items if item["data"]["itemType"] == "webpage"]
+
                 # If we didn't find it, wait and try again
-                if attempt < max_attempts - 1:
+                if not items:
                     logger.info(f"Item not found, waiting {delay} seconds and retrying...")
                     time.sleep(delay)
-                    
+                    continue
+
+                return items[-1]["data"]["key"]
+
             except Exception as e:
                 logger.error(f"Error searching for item by URL: {e}")
                 break
