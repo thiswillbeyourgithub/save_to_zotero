@@ -10,6 +10,7 @@ I created this tool after Omnivore shut down, as I was searching for a good mult
 ## Features
 
 - Save any webpage as a high-quality PDF using Playwright's browser automation
+- Works wether you use Zotero's or Webdav backend for storage
 - Add PDFs to Zotero with proper metadata extraction
 - Support for existing PDF files without webpage sources
 - Automatic metadata extraction from webpages and PDF files
