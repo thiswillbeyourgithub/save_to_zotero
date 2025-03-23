@@ -2,11 +2,6 @@
 Script to save webpages as PDFs and add them to Zotero.
 Uses playwright for PDF generation and pyzotero for Zotero integration.
 """
-
-# Default Zotero connector settings
-DEFAULT_CONNECTOR_HOST = "http://127.0.0.1"
-DEFAULT_CONNECTOR_PORT = 23119
-
 import json
 import os
 import tempfile
@@ -34,6 +29,9 @@ from .utils.webpage import (
 
 # Configure module logger
 configure_logger(__name__)
+
+DEFAULT_CONNECTOR_HOST = "http://127.0.0.1"
+DEFAULT_CONNECTOR_PORT = 23119
 
 
 class SaveToZotero:
