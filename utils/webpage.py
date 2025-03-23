@@ -32,16 +32,19 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
     Returns:
         The title of the webpage
     """
-    # Common desktop user agents
+    # Default user agent that will be used if environment variable is not set
+    DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+
+    # Common desktop user agents for random selection
     user_agents = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        DEFAULT_USER_AGENT,
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",
     ]
 
-    # Choose a random user agent
-    user_agent = random.choice(user_agents)
+    # Get user agent from environment variable or choose randomly
+    user_agent = os.environ.get("ZOTERO_USER_AGENT", random.choice(user_agents))
 
     with sync_playwright() as p:
         # Configure browser with custom user agent and other options
