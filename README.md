@@ -2,10 +2,6 @@
 
 A powerful command-line tool for saving webpages as high-quality PDFs and adding them to your Zotero library with proper metadata. Also supports adding existing PDF files to Zotero.
 
-**Version:** 0.1.0
-
-**WARNING: THIS IS A WORK IN PROGRESS**
-
 ## Personal Motivation
 
 I created this tool after [Omnivore](https://github.com/omnivore-app/omnivore) shut down, as I was searching for a good multiplatform solution for reading PDFs. Zotero proved to be a promising alternative, especially with its HTML annotation feature. However, I needed something that would work on my phone too. Until a complete solution was available, I decided to build this tool to convert webpages to PDFs for use with Zotero across all my devices. Once saved via this tool, all content is fully accessible on your phone, tablet, and any other device with a Zotero client.
@@ -47,14 +43,10 @@ save_to_zotero leverages several technologies to create a seamless experience:
 - Zotero desktop application (must be running during use)
 - Zotero API key (for remote operations)
 
-### Install from PyPI (Coming soon)
+### Install from PyPI
 
 ```bash
-# Install directly from PyPI
-pip install save-to-zotero
-
-# Install Playwright browsers
-playwright install chromium
+uv pip install save-to-zotero
 ```
 
 ### Install from source
@@ -66,12 +58,6 @@ cd save_to_zotero
 
 # Install the package and dependencies
 pip install -e .
-
-# Or using pip directly
-pip install requests fire playwright PyPDF2 loguru pyzotero>=1.6.11 platformdirs bibtexparser feedparser httpx
-
-# Install Playwright browsers
-playwright install chromium
 ```
 
 ## Usage
@@ -127,14 +113,6 @@ export ZOTERO_USER_AGENT="your_custom_user_agent"  # Optional
 
 ## Configuration
 
-### Zotero API Setup
-
-1. Get your Zotero API key from https://www.zotero.org/settings/keys
-2. Ensure the API key has read/write access to your library
-3. Get your library ID from your Zotero profile URL:
-   - For personal libraries: Your username is your library ID (e.g., `https://www.zotero.org/username`)
-   - For group libraries: The numeric ID in the URL (e.g., `https://www.zotero.org/groups/1234567`)
-
 ### Connector Configuration
 
 The tool communicates with Zotero through its connector API, which requires Zotero to be running. By default, it connects to:
@@ -155,7 +133,6 @@ These can be configured using environment variables if needed.
 - **Connector Issues**: 
   - Ensure Zotero is running before executing the command
   - Check if Zotero is using a non-standard port (can be verified in Zotero's Advanced preferences)
-- **PDF Scrolling Problems**: For very long pages, try breaking the capture into sections.
 
 ## License
 
@@ -165,33 +142,12 @@ This project is licensed under the GNU General Public License v3.0 - see the LIC
 
 Contributions are very much welcome! We actively encourage the community to submit Pull Requests for any of the roadmap items or your own ideas. Whether it's fixing bugs, improving documentation, or implementing new features, your contributions will help make this project better for everyone.
 
-### Development Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/save_to_zotero.git
-cd save_to_zotero
-
-# Create a virtual environment (optional but recommended)
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install development dependencies
-pip install -e ".[dev]"  # Once setup.py is implemented
-```
 
 ## Roadmap
 
 Future plans for save_to_zotero include:
 
-- **PyPI Publication**: Publish the package on PyPI for easier installation
 - **Enhanced Metadata Extraction**: Further improve metadata extraction for more accurate bibliographic records
-- **Batch Processing**: Support for processing multiple URLs or PDFs in a single command
-- **Custom PDF Templates**: Allow users to define custom styling for PDF output
-- **Integration with Browser Extensions**: Develop browser extensions to send URLs directly to the tool
-- **Site-specific Handling**: Special handling for common sites like academic journals and news publications
-- **Proxy Support**: Enable use with institutional proxies for accessing paywalled content
-- **PDF Text Layer**: Ensure PDFs have searchable text layers
 
 If you'd like to contribute to any of these initiatives, please check the issues page or open a new discussion.
 
