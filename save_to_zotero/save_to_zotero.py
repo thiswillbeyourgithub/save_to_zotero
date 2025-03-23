@@ -153,7 +153,7 @@ class SaveToZotero:
             logger.info(f"Adding PDF {self.pdf_path} to Zotero...")
             attachment_item = self.save_pdf_using_snapshot()
 
-            # Update its URL to not be localhost
+            # Remove the url as localhost was just for uploading the pdf
             local_url = attachment_item["data"]["url"]
             del attachment_item["data"]["url"]
 
