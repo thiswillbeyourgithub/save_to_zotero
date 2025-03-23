@@ -87,7 +87,7 @@ class ZoteroUploader:
         self.connector_port = connector_port or int(
             os.environ.get("ZOTERO_CONNECTOR_PORT", DEFAULT_CONNECTOR_PORT)
         )
-        
+
         # Make sure Zotero is running
         ensure_zotero_running(self.connector_host, self.connector_port)
 
@@ -109,7 +109,7 @@ class ZoteroUploader:
         self.collection_name = collection_name or os.environ.get(
             "ZOTERO_COLLECTION_NAME"
         )
-        self.tags = tags.split(',') if tags else []
+        self.tags = tags.split(",") if tags else []
         self.verbose = verbose
 
         # Extract domain from URL for file naming or use filename for PDF
@@ -166,7 +166,7 @@ class ZoteroUploader:
             # Add tags if specified
             if self.tags:
                 self.add_tags_to_item(attachment_key)
-                
+
             # Add to collection if specified by name
             if self.collection_name:
                 self.add_to_collection(attachment_key)
@@ -204,10 +204,10 @@ class ZoteroUploader:
             # Add tags if specified and wait for system to be ready
             logger.info("Waiting 10s before adding tags and collection...")
             time.sleep(10)
-            
+
             if self.tags:
                 self.add_tags_to_item(webpage_key)
-                
+
             # Add to collection if specified by name
             if self.collection_name:
                 self.add_to_collection(webpage_key)
@@ -260,10 +260,10 @@ class ZoteroUploader:
 
         try:
             logger.info(f"Adding tags {self.tags} to item {item_key}")
-            
+
             # Get the current item
             item = self.zot.item(item_key)
-            
+
             # Update the item's tags
             if "data" in item and "tags" in item["data"]:
                 # Add each tag to the item
@@ -275,7 +275,7 @@ class ZoteroUploader:
                         # Check if the tag already exists
                         if not any(t.get("tag") == tag for t in item["data"]["tags"]):
                             item["data"]["tags"].append(tag_obj)
-                
+
                 # Update the item in Zotero
                 result = self.zot.update_item(item)
                 logger.debug(f"Tag addition response: {result}")
@@ -285,7 +285,7 @@ class ZoteroUploader:
             else:
                 logger.error("Invalid item data structure returned from Zotero API")
                 return False
-                
+
         except Exception as e:
             logger.error(f"Error adding tags: {e}")
             return False
@@ -481,7 +481,9 @@ class ZoteroUploader:
             logger.info(f"Serving PDF at: {local_url}")
 
             # asking the connector api to save the pdf
-            connector_url = f"{self.connector_host}:{self.connector_port}/connector/saveSnapshot"
+            connector_url = (
+                f"{self.connector_host}:{self.connector_port}/connector/saveSnapshot"
+            )
             payload = {
                 "url": local_url,
                 "title": title,
@@ -490,7 +492,9 @@ class ZoteroUploader:
                 "itemType": "attachment",
             }
             headers = {"Content-Type": "application/json"}
-            response = requests.post(connector_url, headers=headers, data=json.dumps(payload))
+            response = requests.post(
+                connector_url, headers=headers, data=json.dumps(payload)
+            )
             logger.debug(f"saveSnapshot response: {response.text}")
 
         finally:

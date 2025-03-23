@@ -14,7 +14,9 @@ APP_NAME = "save_to_zotero"
 APP_AUTHOR = "save_to_zotero"
 
 # Default log file location - platform-appropriate user directory
-DEFAULT_LOG_FILE = str(Path(platformdirs.user_log_dir(APP_NAME, APP_AUTHOR)) / "save_to_zotero.log")
+DEFAULT_LOG_FILE = str(
+    Path(platformdirs.user_log_dir(APP_NAME, APP_AUTHOR)) / "save_to_zotero.log"
+)
 
 
 def configure_logger(
@@ -73,8 +75,7 @@ configure_logger()
 
 
 def ensure_zotero_running(
-    connector_host: str = "http://127.0.0.1", 
-    connector_port: int = 23119
+    connector_host: str = "http://127.0.0.1", connector_port: int = 23119
 ) -> bool:
     """
     Check if Zotero is running and raise an exception if not.
@@ -91,12 +92,16 @@ def ensure_zotero_running(
     """
     try:
         # Try to contact the Zotero connector API
-        response = requests.post(f"{connector_host}:{connector_port}/connector/ping", timeout=2)
+        response = requests.post(
+            f"{connector_host}:{connector_port}/connector/ping", timeout=2
+        )
         if response.status_code == 200:
             logger.info("Zotero is already running")
             return True
     except requests.exceptions.RequestException:
-        error_msg = "Zotero is not running. Please start Zotero manually before continuing."
+        error_msg = (
+            "Zotero is not running. Please start Zotero manually before continuing."
+        )
         logger.error(error_msg)
         raise RuntimeError(error_msg)
 

@@ -11,16 +11,17 @@ from setuptools.command.install import install
 
 class PostInstallCommand(install):
     """Post-installation command to install Playwright browsers."""
-    
+
     def run(self):
         install.run(self)
-        
+
         # Install Playwright browsers
         try:
             subprocess.check_call([sys.executable, "-m", "playwright", "install"])
         except Exception as err:
             print(f"Error when installing Playwright browsers: '{err}'")
             print("You may need to run 'python -m playwright install' manually")
+
 
 # Read the README.md file for the long description
 with open("README.md", "r") as readme:
