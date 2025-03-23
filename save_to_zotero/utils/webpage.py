@@ -6,13 +6,12 @@ import os
 import threading
 import http.server
 import socketserver
-import logging
 import random
 import time
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 from urllib.parse import urlparse
-from playwright.sync_api import sync_playwright, Page, BrowserContext
+from playwright.sync_api import sync_playwright, Page
 
 from save_to_zotero.utils.misc import configure_logger
 

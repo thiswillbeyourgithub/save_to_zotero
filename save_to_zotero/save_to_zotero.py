@@ -7,23 +7,18 @@ Uses playwright for PDF generation and pyzotero for Zotero integration.
 DEFAULT_CONNECTOR_HOST = "http://127.0.0.1"
 DEFAULT_CONNECTOR_PORT = 23119
 
-import hashlib
 import json
 import os
 import tempfile
-import subprocess
 import time
 from datetime import datetime
-from typing import Dict, Optional, Tuple, Any, Union, List
+from typing import Dict, Optional
 import requests
-import fire
 import shutil
 from pyzotero import zotero
 from playwright.sync_api import sync_playwright
 from pathlib import Path
 from urllib.parse import urlparse
-import io
-import pypdf
 from loguru import logger
 from requests.exceptions import RequestException
 from save_to_zotero.utils.misc import (
@@ -431,7 +426,7 @@ class ZoteroUploader:
             logger.error(f"Unexpected error saving snapshot: {e}")
             raise
 
-    def save_pdf_using_snapshot(self) -> Dict[str, Any]:
+    def save_pdf_using_snapshot(self) -> Dict:
         """
         Save a pdf file using Zotero connector's saveSnapshot API.
 

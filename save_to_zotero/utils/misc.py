@@ -2,11 +2,8 @@
 Utility functions for common operations.
 """
 
-from typing import Optional, Dict, Any, Union, List
+from typing import Optional
 import sys
-import os
-import subprocess
-import time
 import requests
 from pathlib import Path
 from loguru import logger
