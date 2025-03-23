@@ -60,6 +60,7 @@ class ZoteroUploader:
         collection_name: Optional[str] = None,
         connector_host: Optional[str] = None,
         connector_port: Optional[int] = None,
+        tags: Optional[str] = None,
         verbose: bool = False,
     ):
         """
@@ -113,6 +114,7 @@ class ZoteroUploader:
         self.collection_name = collection_name or os.environ.get(
             "ZOTERO_COLLECTION_NAME"
         )
+        self.tags = tags.split(',') if tags else []
         self.verbose = verbose
 
         # Extract domain from URL for file naming or use filename for PDF
@@ -166,6 +168,10 @@ class ZoteroUploader:
 
             print(f"✓ Item for PDF created with key: {attachment_key}")
 
+            # Add tags if specified
+            if self.tags:
+                self.add_tags_to_item(attachment_key)
+                
             # Add to collection if specified by name
             if self.collection_name:
                 self.add_to_collection(attachment_key)
@@ -200,9 +206,14 @@ class ZoteroUploader:
 
             print(f"✓ Webpage item created with key: {webpage_key} with PDF attachment")
 
-            # Add to collection if specified by name
-            logger.info("Waiting 10s before adding to collection...")
+            # Add tags if specified and wait for system to be ready
+            logger.info("Waiting 10s before adding tags and collection...")
             time.sleep(10)
+            
+            if self.tags:
+                self.add_tags_to_item(webpage_key)
+                
+            # Add to collection if specified by name
             if self.collection_name:
                 self.add_to_collection(webpage_key)
 
@@ -237,6 +248,52 @@ class ZoteroUploader:
         except Exception as e:
             logger.error(f"Error finding collection by name: {e}")
             return None
+
+    def add_tags_to_item(self, item_key: str) -> bool:
+        """
+        Add tags to an item.
+
+        Args:
+            item_key: The key of the item to add tags to
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if not self.tags:
+            logger.info("No tags specified, skipping tag assignment")
+            return False
+
+        try:
+            logger.info(f"Adding tags {self.tags} to item {item_key}")
+            
+            # Get the current item
+            item = self.zot.item(item_key)
+            
+            # Update the item's tags
+            if "data" in item and "tags" in item["data"]:
+                # Add each tag to the item
+                for tag in self.tags:
+                    tag = tag.strip()
+                    if tag:  # Skip empty tags
+                        # Tag format for Zotero API
+                        tag_obj = {"tag": tag}
+                        # Check if the tag already exists
+                        if not any(t.get("tag") == tag for t in item["data"]["tags"]):
+                            item["data"]["tags"].append(tag_obj)
+                
+                # Update the item in Zotero
+                result = self.zot.update_item(item)
+                logger.debug(f"Tag addition response: {result}")
+                logger.info(f"Successfully added tags: {', '.join(self.tags)}")
+                print(f"✓ Added tags: {', '.join(self.tags)}")
+                return True
+            else:
+                logger.error("Invalid item data structure returned from Zotero API")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error adding tags: {e}")
+            return False
 
     def add_to_collection(self, item_key: str) -> bool:
         """
