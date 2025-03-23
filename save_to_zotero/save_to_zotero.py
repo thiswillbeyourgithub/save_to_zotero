@@ -202,6 +202,7 @@ class SaveToZotero:
 
             # update the meta field of the webpage to contain metadata
             webpage = self.zot.item(webpage_key)
+            metadata["save_to_zotero_version"] = self.VERSION
             webpage["data"]["extra"] = "\n".join(
                 [
                     f"{k}: {v}"
