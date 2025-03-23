@@ -3,6 +3,10 @@ Script to save webpages as PDFs and add them to Zotero.
 Uses playwright for PDF generation and pyzotero for Zotero integration.
 """
 
+# Default Zotero connector settings
+DEFAULT_CONNECTOR_HOST = "http://127.0.0.1"
+DEFAULT_CONNECTOR_PORT = 23119
+
 import hashlib
 import json
 import os
@@ -55,6 +59,8 @@ class ZoteroUploader:
         library_type: str = "user",
         collection: Optional[str] = None,
         collection_name: Optional[str] = None,
+        connector_host: Optional[str] = None,
+        connector_port: Optional[int] = None,
         verbose: bool = False,
     ):
         """
@@ -70,6 +76,8 @@ class ZoteroUploader:
             library_type: Zotero library type (must be "user" or "group", defaults to ZOTERO_LIBRARY_TYPE if set)
             collection: Collection key to add the item to (defaults to ZOTERO_COLLECTION environment variable if not provided)
             collection_name: Collection name to add the item to (will search for a collection with this name)
+            connector_host: Zotero connector host (defaults to ZOTERO_CONNECTOR_HOST environment variable or http://127.0.0.1)
+            connector_port: Zotero connector port (defaults to ZOTERO_CONNECTOR_PORT environment variable or 23119)
             verbose: Enable verbose logging
 
         """
@@ -85,6 +93,10 @@ class ZoteroUploader:
         library_id = library_id or os.environ.get("ZOTERO_LIBRARY_ID")
         library_type = library_type or os.environ.get("ZOTERO_LIBRARY_TYPE")
         # No environment fallback for collection - only use collection_name
+        
+        # Connector host/port config with env var fallbacks
+        self.connector_host = connector_host or os.environ.get("ZOTERO_CONNECTOR_HOST", DEFAULT_CONNECTOR_HOST)
+        self.connector_port = connector_port or int(os.environ.get("ZOTERO_CONNECTOR_PORT", DEFAULT_CONNECTOR_PORT))
 
         self.url = url
         self.pdf_path = Path(pdf_path) if pdf_path else None
@@ -290,7 +302,7 @@ class ZoteroUploader:
             return None
 
         # Define the connector endpoint
-        connector_url = "http://127.0.0.1:23119/connector/saveSnapshot"
+        connector_url = f"{self.connector_host}:{self.connector_port}/connector/saveSnapshot"
 
         # Prepare the payload
         payload = {
@@ -403,7 +415,7 @@ class ZoteroUploader:
             logger.info(f"Serving PDF at: {local_url}")
 
             # asking the connector api to save the pdf
-            url = "http://127.0.0.1:23119/connector/saveSnapshot"
+            url = f"{self.connector_host}:{self.connector_port}/connector/saveSnapshot"
             payload = {
                 "url": local_url,
                 "title": title,
