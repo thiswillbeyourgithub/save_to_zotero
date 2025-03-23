@@ -8,12 +8,13 @@ A powerful command-line tool for saving webpages as high-quality PDFs and adding
 
 ## Personal Motivation
 
-I created this tool after [Omnivore](https://github.com/omnivore-app/omnivore) shut down, as I was searching for a good multiplatform solution for reading PDFs. Zotero proved to be a promising alternative, especially with its HTML annotation feature. However, I needed something that would work on my phone too. Until a complete solution was available, I decided to build this tool to convert webpages to PDFs for use with Zotero across all my devices.
+I created this tool after [Omnivore](https://github.com/omnivore-app/omnivore) shut down, as I was searching for a good multiplatform solution for reading PDFs. Zotero proved to be a promising alternative, especially with its HTML annotation feature. However, I needed something that would work on my phone too. Until a complete solution was available, I decided to build this tool to convert webpages to PDFs for use with Zotero across all my devices. Once saved via this tool, all content is fully accessible on your phone, tablet, and any other device with a Zotero client.
 
 ## Features
 
 - Save any webpage as a high-quality PDF using Playwright's browser automation
 - Works whether you use Zotero's or WebDAV backend for storage
+- PDFs and webpages saved are accessible on all Zotero clients (desktop, mobile, tablet)
 - Add PDFs to Zotero with proper metadata extraction
 - Support for existing PDF files without webpage sources
 - Automatic metadata extraction from webpages (title, description, author, publication date)
@@ -33,7 +34,7 @@ save_to_zotero leverages several technologies to create a seamless experience:
 
 3. **Metadata Extraction**: Extracts key metadata (title, description, author, publication date) from the webpage to create rich Zotero entries.
 
-4. **Zotero Integration**: Communicates with your Zotero library through both the Zotero API and the Zotero Connector API to ensure items are properly indexed and accessible.
+4. **Zotero Integration**: Communicates with your Zotero library through both the Zotero API and the Zotero Connector API to ensure items are properly indexed and accessible on all your devices (computer, phone, tablet) regardless of whether you use Zotero's storage or WebDAV.
 
 5. **Anti-Detection Measures**: Uses randomized user agents and anti-fingerprinting techniques to bypass website restrictions.
 
