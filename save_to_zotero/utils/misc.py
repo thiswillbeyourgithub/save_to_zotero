@@ -64,7 +64,6 @@ def configure_logger(
             compression="zip",
         )
 
-        logger.info(f"Logging to file: {log_file}")
         logger.debug(f"Log file location: {Path(log_file).absolute()}")
 
     return logger
