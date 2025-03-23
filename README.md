@@ -66,25 +66,31 @@ pip install -e .
 
 ### Basic Usage
 
+Note: to launch save-to-zotero you have three possibilities:
+
+1. Preferred: `uvx save-to-zotero@latest [args]`. This will always use the latest version.
+2. `python -m save_to_zotero [args]`
+3. `save-to-zotero [args]`
+
 ```bash
 # Save a webpage to Zotero
-save-to-zotero --url="https://example.com/article"
+uvx save-to-zotero@latest --url="https://example.com/article"
 
 # Add an existing PDF file to Zotero
-save-to-zotero --pdf_path="/path/to/document.pdf"
+uvx save-to-zotero@latest --pdf_path="/path/to/document.pdf"
 
 # Add to a specific collection
-save-to-zotero --url="https://example.com/article" --collection_name="Research Papers"
+uvx save-to-zotero@latest --url="https://example.com/article" --collection_name="Research Papers"
 
 # Add tags to the item
-save-to-zotero --url="https://example.com/article" --tags="research,important,to-read"
+uvx save-to-zotero@latest --url="https://example.com/article" --tags="research,important,to-read"
 ```
 
 ### Advanced Options
 
 ```bash
 # Full options
-save-to-zotero \
+uvx save-to-zotero \
   --url="https://example.com/article" \
   --wait=8000 \
   --api_key="your_zotero_api_key" \
@@ -95,7 +101,7 @@ save-to-zotero \
   --verbose=True
 
 # For pages with complex JavaScript content, increase wait time
-save-to-zotero --url="https://complex-site.com/article" --wait=10000
+uvx save-to-zotero --url="https://complex-site.com/article" --wait=10000
 ```
 
 ### Environment Variables
