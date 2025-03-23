@@ -170,7 +170,7 @@ class SaveToZotero:
                 self.add_to_collection(attachment_key)
 
             print("✓ PDF attachment added successfully")
-        else:
+        elif self.url:
             logger.info(f"Saving {self.url} to Zotero...")
 
             logger.info("Saving url using the connector API")
@@ -208,6 +208,8 @@ class SaveToZotero:
             # Add to collection if specified by name
             if self.collection_name:
                 self.add_to_collection(webpage_key)
+        else:
+            raise Exception()
 
         print("Item has been saved to your Zotero library.")
         logger.info("Successfully added to Zotero!")
