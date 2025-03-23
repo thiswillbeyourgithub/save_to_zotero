@@ -4,11 +4,16 @@ Setup script for save_to_zotero package.
 
 from setuptools import setup, find_packages
 
+# Read the README.md file for the long description
+with open("README.md", "r") as readme:
+    long_description = readme.read()
 
 setup(
     name="save_to_zotero",
-    version="0.1.0",,
+    version="0.1.0",
     description="Save webpages as PDFs and add them to Zotero",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     author="save_to_zotero",
     author_email="",  # Add your email
     url="https://github.com/thiswillbeyourgithub/save_to_zotero",  # Change this to your repo
