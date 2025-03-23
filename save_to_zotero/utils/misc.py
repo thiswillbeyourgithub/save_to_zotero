@@ -11,8 +11,33 @@ import requests
 from pathlib import Path
 from loguru import logger
 
-# Default log file location
-DEFAULT_LOG_FILE = str(Path(__file__).parent.parent / "zotero_uploader.log")
+# Get user's home directory for storing logs in a platform-appropriate location
+def get_app_log_dir() -> Path:
+    """
+    Get an appropriate directory for storing application logs.
+    Creates the directory if it doesn't exist.
+    
+    Returns:
+        Path object for the log directory
+    """
+    # Use platform-specific locations
+    if sys.platform == "win32":
+        # Windows: Use %APPDATA%\save_to_zotero\logs
+        base_dir = Path(os.environ.get("APPDATA", "~")) / "save_to_zotero" / "logs"
+    elif sys.platform == "darwin":
+        # macOS: Use ~/Library/Logs/save_to_zotero
+        base_dir = Path("~").expanduser() / "Library" / "Logs" / "save_to_zotero"
+    else:
+        # Linux/Unix: Use ~/.local/share/save_to_zotero/logs (XDG Base Directory)
+        xdg_data_home = os.environ.get("XDG_DATA_HOME", "~/.local/share")
+        base_dir = Path(xdg_data_home).expanduser() / "save_to_zotero" / "logs"
+    
+    # Ensure directory exists
+    base_dir.mkdir(parents=True, exist_ok=True)
+    return base_dir
+
+# Default log file location - platform-appropriate user directory
+DEFAULT_LOG_FILE = str(get_app_log_dir() / "zotero_uploader.log")
 
 
 def configure_logger(
