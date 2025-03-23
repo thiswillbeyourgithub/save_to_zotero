@@ -53,19 +53,44 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
 
     with sync_playwright() as p:
         # Configure browser with custom user agent and other options
-        browser = p.chromium.launch(
-            headless=True, args=["--disable-blink-features=AutomationControlled"]
-        )
-
-        # Create context with optimal reading settings for all devices
-        context = browser.new_context(
-            user_agent=user_agent,
-            viewport=viewport,
-            device_scale_factor=device_scale_factor,
-            java_script_enabled=java_script_enabled,
-            locale=locale,
-            timezone_id=timezone_id,
-        )
+        launch_args = {
+            "args": ["--disable-blink-features=AutomationControlled"]
+        }
+        
+        # Check if user data directory is specified in environment variable
+        user_data_dir = os.environ.get("ZOTERO_BROWSER_USER_DATA_DIR")
+        
+        if user_data_dir:
+            logger.info(f"Using browser user data directory: {user_data_dir}")
+            logger.info("Running browser in visible mode with user data directory")
+            
+            # Use launch_persistent_context for user data directories
+            context = p.chromium.launch_persistent_context(
+                user_data_dir=user_data_dir,
+                headless=False,  # Always visible when using user data dir
+                args=["--disable-blink-features=AutomationControlled"],
+                user_agent=user_agent,
+                viewport=viewport,
+                device_scale_factor=device_scale_factor,
+                java_script_enabled=java_script_enabled,
+                locale=locale,
+                timezone_id=timezone_id,
+            )
+            browser = None  # No separate browser instance in this case
+        else:
+            # Default to headless mode when no user data directory is specified
+            launch_args["headless"] = True
+            browser = p.chromium.launch(**launch_args)
+            
+            # Create context with optimal reading settings for all devices
+            context = browser.new_context(
+                user_agent=user_agent,
+                viewport=viewport,
+                device_scale_factor=device_scale_factor,
+                java_script_enabled=java_script_enabled,
+                locale=locale,
+                timezone_id=timezone_id,
+            )
 
         # Add humanizing attributes to prevent fingerprinting
         context.add_init_script(
@@ -134,12 +159,14 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
             )
 
             context.close()
-            browser.close()
+            if browser:  # Only close browser if it was created separately
+                browser.close()
             return metadata
         except Exception as e:
             logger.error(f"Error saving webpage as PDF: {str(e)}")
             context.close()
-            browser.close()
+            if browser:  # Only close browser if it was created separately
+                browser.close()
             raise e
 
 

@@ -117,6 +117,7 @@ export ZOTERO_COLLECTION_NAME="collection_name"
 export ZOTERO_CONNECTOR_HOST="http://127.0.0.1"  # Default connector host
 export ZOTERO_CONNECTOR_PORT="23119"  # Default connector port
 export ZOTERO_USER_AGENT="your_custom_user_agent"  # Optional
+export ZOTERO_BROWSER_USER_DATA_DIR="/path/to/user/data/dir"  # Optional: for persistent cookies/login sessions
 ```
 
 ## Configuration
@@ -130,6 +131,28 @@ The tool communicates with Zotero through its connector API, which requires Zote
 
 These can be configured using environment variables if needed.
 
+### Browser Configuration
+
+By default, save_to_zotero runs in headless mode (invisible browser) for PDF generation. However, you can:
+
+1. **Use Existing Browser Cookies**: Set the `ZOTERO_BROWSER_USER_DATA_DIR` environment variable to your browser's user data directory to utilize cookies already stored in your browser for sites that require login
+2. **Run in Visible Mode**: When a user data directory is specified, the browser automatically runs in visible mode (non-headless), allowing you to see the page capture process
+
+⚠️ **Important Warning**: When using a browser user data directory, avoid using the same browser profile simultaneously while save_to_zotero is running, as this could cause conflicts and potentially corrupt your browser profile
+
+Example:
+```bash
+# Set path to your existing Chrome/Chromium user data directory
+export ZOTERO_BROWSER_USER_DATA_DIR="/home/username/.config/chromium/Default"  # Linux example
+# or
+export ZOTERO_BROWSER_USER_DATA_DIR="C:\\Users\\username\\AppData\\Local\\Google\\Chrome\\User Data\\Default"  # Windows example
+# or
+export ZOTERO_BROWSER_USER_DATA_DIR="/Users/username/Library/Application Support/Google/Chrome/Default"  # macOS example
+
+# Run the tool - it will use your existing browser cookies and run in visible mode
+uvx save-to-zotero@latest --url="https://example.com/login-required-page"
+```
+
 ## Troubleshooting
 
 - **Zotero Must Be Running**: The tool requires the Zotero desktop application to be running.
@@ -141,6 +164,10 @@ These can be configured using environment variables if needed.
 - **Connector Issues**: 
   - Ensure Zotero is running before executing the command
   - Check if Zotero is using a non-standard port (can be verified in Zotero's Advanced preferences)
+- **Login-Required Pages**:
+  - For pages that require login, set the `ZOTERO_BROWSER_USER_DATA_DIR` environment variable to point to your existing browser profile to use already stored cookies
+  - Ensure you close the browser or don't use the same profile while save_to_zotero is running
+  - You can also create a dedicated browser profile just for save_to_zotero to avoid conflicts
 
 ## License
 
