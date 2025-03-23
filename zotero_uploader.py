@@ -429,7 +429,7 @@ class ZoteroUploader:
             logger.info(f"Serving PDF at: {local_url}")
 
             # asking the connector api to save the pdf
-            url = f"{self.connector_host}:{self.connector_port}/connector/saveSnapshot"
+            connector_url = f"{self.connector_host}:{self.connector_port}/connector/saveSnapshot"
             payload = {
                 "url": local_url,
                 "title": title,
@@ -438,7 +438,7 @@ class ZoteroUploader:
                 "itemType": "attachment",
             }
             headers = {"Content-Type": "application/json"}
-            response = requests.post(url, headers=headers, data=json.dumps(payload))
+            response = requests.post(connector_url, headers=headers, data=json.dumps(payload))
             logger.debug(f"saveSnapshot response: {response.text}")
 
         finally:
