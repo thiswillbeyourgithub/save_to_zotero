@@ -209,7 +209,9 @@ class SaveToZotero:
             metadata_update = self.zot.update_item(webpage)
             logger.debug(f"Metadata update answer: {metadata_update}")
 
-            assert "success" in metadata_update and metadata_update["success"], attachment_item
+            assert metadata_update, (
+                        "Error when updating metadata of webpage "
+                        f"to '{webpage['data']['extra']}'")
 
             print(f"✓ Webpage item created with key: {webpage_key} with PDF attachment")
 
