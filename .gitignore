@@ -2,5 +2,6 @@
 .env
 reference
 __pycache__
+**.egg-info
 **/*.log
 *.pdf
