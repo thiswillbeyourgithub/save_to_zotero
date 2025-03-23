@@ -443,8 +443,9 @@ class SaveToZotero:
 
         if self.url:
             # Save the webpage as PDF
-            title = save_webpage_as_pdf(self.url, str(pdf_path), self.wait)
+            metadata = save_webpage_as_pdf(self.url, str(pdf_path), self.wait)
             # Rename with better title
+            title = metadata["title"]
             sanitized_title = "".join(
                 c for c in title if c.isalnum() or c in " ._-"
             ).strip()

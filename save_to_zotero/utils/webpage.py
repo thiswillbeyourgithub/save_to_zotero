@@ -19,7 +19,7 @@ from .misc import configure_logger
 logger = configure_logger(__name__)
 
 
-def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -> str:
+def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -> dict:
     """
     Save a webpage as a PDF using Playwright with human-like behavior.
 
@@ -29,7 +29,7 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
         wait_for_load: Base time to wait in ms for page to fully load (will be randomized)
 
     Returns:
-        The title of the webpage
+        The metadata of the page
     """
     # Default user agent that will be used if environment variable is not set
     DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
@@ -92,12 +92,12 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
             # Small consistent delay before getting title
             time.sleep(100 / 1000)
 
-            # Get the page title for metadata
-            title = page.title()
-            logger.info(f"Retrieved page title: {title}")
-
             # Extract metadata for later use
             metadata = get_webpage_metadata(page, url)
+
+            # Get the page title for metadata
+            title = metadata["title"]
+            logger.info(f"Retrieved page title: {title}")
 
             # Configure PDF options for better quality
             page.emulate_media(media="screen")
@@ -121,7 +121,7 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
 
             context.close()
             browser.close()
-            return title
+            return metadata
         except Exception as e:
             logger.error(f"Error saving webpage as PDF: {str(e)}")
             context.close()
