@@ -17,7 +17,7 @@ APP_NAME = "save_to_zotero"
 APP_AUTHOR = "save_to_zotero"
 
 # Default log file location - platform-appropriate user directory
-DEFAULT_LOG_FILE = str(Path(platformdirs.user_log_dir(APP_NAME, APP_AUTHOR)) / "zotero_uploader.log")
+DEFAULT_LOG_FILE = str(Path(platformdirs.user_log_dir(APP_NAME, APP_AUTHOR)) / "save_to_zotero.log")
 
 
 def configure_logger(
