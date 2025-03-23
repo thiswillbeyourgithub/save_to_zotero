@@ -39,17 +39,16 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",
     ]
-    
+
     # Choose a random user agent
     user_agent = random.choice(user_agents)
-    
+
     with sync_playwright() as p:
         # Configure browser with custom user agent and other options
         browser = p.chromium.launch(
-            headless=True,
-            args=["--disable-blink-features=AutomationControlled"]
+            headless=True, args=["--disable-blink-features=AutomationControlled"]
         )
-        
+
         # Create context with optimal reading settings for all devices
         context = browser.new_context(
             user_agent=user_agent,
@@ -59,36 +58,38 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
             locale="en-US",
             timezone_id="America/New_York",
         )
-        
+
         # Add humanizing attributes to prevent fingerprinting
-        context.add_init_script("""
+        context.add_init_script(
+            """
             Object.defineProperty(navigator, 'webdriver', {
                 get: () => false
             });
-        """)
-        
+        """
+        )
+
         page = context.new_page()
 
         try:
             # Add small random delay before navigation (100-500ms)
             time.sleep(random.randint(100, 500) / 1000)
-            
+
             logger.info(f"Navigating to {url}")
             # Navigate to the URL with a timeout
             page.goto(url, wait_until="networkidle", timeout=45000)
-            
+
             # Use consistent wait time
             page.wait_for_timeout(wait_for_load)
-            
+
             # Simulate human-like scrolling behavior
             _simulate_scrolling(page)
-            
+
             # Expand dropdowns, accordions, and other hidden content
             _expand_hidden_elements(page)
 
             # Small consistent delay before getting title
             time.sleep(100 / 1000)
-            
+
             # Get the page title for metadata
             title = page.title()
             logger.info(f"Retrieved page title: {title}")
@@ -99,10 +100,10 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
             # Configure PDF options for better quality
             page.emulate_media(media="screen")
             logger.info(f"Generating PDF at {output_path}")
-            
+
             # Consistent delay before PDF generation
             time.sleep(300 / 1000)
-            
+
             page.pdf(
                 path=output_path,
                 format="A4",
@@ -129,30 +130,32 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
 def _simulate_scrolling(page: Page) -> None:
     """
     Simulate human-like scrolling behavior on a webpage.
-    
+
     Args:
         page: The Playwright page object
     """
     try:
         # Get page height
         height = page.evaluate("document.body.scrollHeight")
-        
+
         # Use a systematic approach to scroll the entire page
         viewport_height = page.viewport_size["height"]
-        
+
         # Calculate number of scrolls needed to cover the entire page
         num_scrolls = max(3, int(height / viewport_height) + 1)
-        
+
         for i in range(num_scrolls):
             # Scroll to specific positions to ensure complete page coverage
-            scroll_to = min(i * (viewport_height * 0.8), height)  # 80% overlap for better content capture
-            
+            scroll_to = min(
+                i * (viewport_height * 0.8), height
+            )  # 80% overlap for better content capture
+
             # Execute the scroll with smooth behavior
             page.evaluate(f"window.scrollTo({{top: {scroll_to}, behavior: 'smooth'}})")
-            
+
             # Consistent pause between scrolls
             page.wait_for_timeout(800)
-                
+
     except Exception as e:
         logger.warning(f"Error during scrolling simulation: {str(e)}")
         # Continue if scrolling fails - this is non-critical
@@ -162,16 +165,17 @@ def _expand_hidden_elements(page: Page) -> None:
     """
     Expand dropdowns, accordions, and other hidden content to ensure
     all text is visible in the PDF.
-    
+
     Args:
         page: The Playwright page object
     """
     try:
         # Consistent small delay before expanding elements
         time.sleep(200 / 1000)
-        
+
         # Execute JavaScript to expand common interactive elements
-        page.evaluate("""() => {
+        page.evaluate(
+            """() => {
             // Function to expand elements
             const expandElements = () => {
                 // 1. Click on common dropdown/accordion triggers
@@ -252,14 +256,16 @@ def _expand_hidden_elements(page: Page) -> None:
             // Schedule another expansion after a short delay to catch any elements
             // that might be loaded or displayed dynamically after initial expansion
             setTimeout(expandElements, 300);
-        }""")
-        
+        }"""
+        )
+
         # Consistent pause to allow expansions to complete
         page.wait_for_timeout(800)
-        
+
         # Second pass with more specific selectors that might trigger UI updates
         logger.info("Performing secondary expansion of interactive elements")
-        page.evaluate("""() => {
+        page.evaluate(
+            """() => {
             // Find elements with "show more" or similar text
             const textExpandButtons = Array.from(document.querySelectorAll('button, a, span, div'))
                 .filter(el => {
@@ -279,13 +285,14 @@ def _expand_hidden_elements(page: Page) -> None:
                     // Ignore errors
                 }
             });
-        }""")
-        
+        }"""
+        )
+
         # Final consistent delay to allow all expansions to complete
         page.wait_for_timeout(500)
-        
+
         logger.info("Completed expansion of hidden elements")
-        
+
     except Exception as e:
         logger.warning(f"Error while expanding hidden elements: {str(e)}")
         # Continue if expansion fails - this is non-critical

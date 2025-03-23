@@ -35,7 +35,7 @@ def configure_logger(
     """
     # Remove any existing handlers
     logger.remove()
-    
+
     # Add console handler if requested
     if console:
         logger.add(
@@ -59,7 +59,7 @@ def configure_logger(
             rotation="10 MB",
             compression="zip",
         )
-        
+
         logger.info(f"Logging to file: {log_file}")
 
     return logger

@@ -93,10 +93,14 @@ class ZoteroUploader:
         library_id = library_id or os.environ.get("ZOTERO_LIBRARY_ID")
         library_type = library_type or os.environ.get("ZOTERO_LIBRARY_TYPE")
         # No environment fallback for collection - only use collection_name
-        
+
         # Connector host/port config with env var fallbacks
-        self.connector_host = connector_host or os.environ.get("ZOTERO_CONNECTOR_HOST", DEFAULT_CONNECTOR_HOST)
-        self.connector_port = connector_port or int(os.environ.get("ZOTERO_CONNECTOR_PORT", DEFAULT_CONNECTOR_PORT))
+        self.connector_host = connector_host or os.environ.get(
+            "ZOTERO_CONNECTOR_HOST", DEFAULT_CONNECTOR_HOST
+        )
+        self.connector_port = connector_port or int(
+            os.environ.get("ZOTERO_CONNECTOR_PORT", DEFAULT_CONNECTOR_PORT)
+        )
 
         self.url = url
         self.pdf_path = Path(pdf_path) if pdf_path else None
@@ -106,7 +110,9 @@ class ZoteroUploader:
         self.library_id = library_id
         self.library_type = library_type
         self.collection = collection
-        self.collection_name = collection_name or os.environ.get("ZOTERO_COLLECTION_NAME")
+        self.collection_name = collection_name or os.environ.get(
+            "ZOTERO_COLLECTION_NAME"
+        )
         self.verbose = verbose
 
         # Extract domain from URL for file naming or use filename for PDF
@@ -134,7 +140,9 @@ class ZoteroUploader:
 
         # Zotero API configuration
 
-        logger.info(f"Connecting to Zotero library: {self.library_id} ({self.library_type})")
+        logger.info(
+            f"Connecting to Zotero library: {self.library_id} ({self.library_type})"
+        )
         self.zot = zotero.Zotero(
             library_id,
             library_type,
@@ -199,7 +207,6 @@ class ZoteroUploader:
         print("Item has been saved to your Zotero library.")
         logger.info("Successfully added to Zotero!")
 
-
     def find_collection_by_name(self, name: str) -> Optional[str]:
         """
         Find a collection key by its name.
@@ -218,7 +225,9 @@ class ZoteroUploader:
                 if "data" in collection and "name" in collection["data"]:
                     if collection["data"]["name"] == name:
                         collection_key = collection["data"]["key"]
-                        logger.info(f"Found collection '{name}' with key: {collection_key}")
+                        logger.info(
+                            f"Found collection '{name}' with key: {collection_key}"
+                        )
                         return collection_key
 
             logger.warning(f"Could not find collection with name: {name}")
@@ -244,7 +253,9 @@ class ZoteroUploader:
         if not collection_key and self.collection_name:
             collection_key = self.find_collection_by_name(self.collection_name)
             if not collection_key:
-                logger.warning(f"Could not find collection with name: {self.collection_name}")
+                logger.warning(
+                    f"Could not find collection with name: {self.collection_name}"
+                )
                 return False
 
         if not collection_key:
@@ -275,7 +286,9 @@ class ZoteroUploader:
 
             # Print appropriate message based on which collection identifier was used
             if self.collection_name and self.collection_name != collection_key:
-                logger.info(f"Successfully added to collection: {self.collection_name} ({collection_key})")
+                logger.info(
+                    f"Successfully added to collection: {self.collection_name} ({collection_key})"
+                )
                 print(f"✓ Added to collection: {self.collection_name}")
             else:
                 logger.info(f"Successfully added to collection: {collection_key}")
@@ -285,7 +298,6 @@ class ZoteroUploader:
         except Exception as e:
             logger.error(f"Error adding to collection: {e}")
             return False
-
 
     def save_url_using_snapshot(self) -> Optional[str]:
         """
@@ -302,13 +314,12 @@ class ZoteroUploader:
             return None
 
         # Define the connector endpoint
-        connector_url = f"{self.connector_host}:{self.connector_port}/connector/saveSnapshot"
+        connector_url = (
+            f"{self.connector_host}:{self.connector_port}/connector/saveSnapshot"
+        )
 
         # Prepare the payload
-        payload = {
-            "url": self.url,
-            "title": None  # Will be auto-detected by Zotero
-        }
+        payload = {"url": self.url, "title": None}  # Will be auto-detected by Zotero
 
         try:
             # Get the title using Playwright for better accuracy
@@ -338,14 +349,12 @@ class ZoteroUploader:
 
         try:
             # Make the request to the Zotero connector
-            response = requests.post(
-                connector_url,
-                json=payload,
-                timeout=30
-            )
+            response = requests.post(connector_url, json=payload, timeout=30)
 
             assert response.status_code in [200, 201], response.status_code
-            logger.info(f"Snapshot saved successfully (status code: {response.status_code})")
+            logger.info(
+                f"Snapshot saved successfully (status code: {response.status_code})"
+            )
             logger.debug(f"Snapshot response: {response.text}")
 
             # When saving the snapshot the response
@@ -385,7 +394,9 @@ class ZoteroUploader:
             # Save the webpage as PDF
             title = save_webpage_as_pdf(self.url, str(pdf_path), self.wait)
             # Rename with better title
-            sanitized_title = "".join(c for c in title if c.isalnum() or c in " ._-").strip()
+            sanitized_title = "".join(
+                c for c in title if c.isalnum() or c in " ._-"
+            ).strip()
             sanitized_title = sanitized_title[:50]  # Limit length
             new_filename = f"{sanitized_title}_{self.domain}.pdf"
             new_pdf_path = pdf_dir / new_filename
@@ -395,7 +406,6 @@ class ZoteroUploader:
             new_pdf_path = pdf_dir / self.pdf_path.name
             new_pdf_path.unlink(missing_ok=True)
             shutil.copy2(str(self.pdf_path), str(pdf_dir / self.pdf_path.name))
-
 
         # Attach the PDF to the webpage item
         logger.info("Attaching PDF to the webpage item")
@@ -410,7 +420,9 @@ class ZoteroUploader:
             # copy the pdf to a new file with predictable name to
             # avoid issues like space in filenames that might
             # break the url
-            shutil.copy2(str(new_pdf_path), str(new_pdf_path.parent / "during_transfer.pdf"))
+            shutil.copy2(
+                str(new_pdf_path), str(new_pdf_path.parent / "during_transfer.pdf")
+            )
             local_url = f"http://localhost:{server_port}/during_transfer.pdf"
             logger.info(f"Serving PDF at: {local_url}")
 
@@ -439,7 +451,13 @@ class ZoteroUploader:
 
         return attachment_item
 
-    def find_item_by_url(self, url: str, max_attempts: int = 3, delay: float = 30.0, itemType: str = "webpage") -> Optional[str]:
+    def find_item_by_url(
+        self,
+        url: str,
+        max_attempts: int = 3,
+        delay: float = 30.0,
+        itemType: str = "webpage",
+    ) -> Optional[str]:
         """
         Find a recently added Zotero item by its URL.
 
@@ -461,17 +479,26 @@ class ZoteroUploader:
                 # Get recent items, sorted by date added (newest first)
                 items = self.zot.items(sort="dateAdded", direction="desc", limit=10)
                 # sort so that oldest items are first and latest are last
-                items = sorted(items, key=lambda x: datetime.fromisoformat(x["data"]["dateModified"].replace("Z", "+00:00")))
+                items = sorted(
+                    items,
+                    key=lambda x: datetime.fromisoformat(
+                        x["data"]["dateModified"].replace("Z", "+00:00")
+                    ),
+                )
                 items = [item for item in items if "data" in item]
                 items = [item for item in items if "url" in item["data"]]
                 items = [item for item in items if item["data"]["url"] == url]
                 # keep only the webpage instead of the attachment etc
                 if itemType:
-                    items = [item for item in items if item["data"]["itemType"] == itemType]
+                    items = [
+                        item for item in items if item["data"]["itemType"] == itemType
+                    ]
 
                 # If we didn't find it, wait and try again
                 if not items:
-                    logger.info(f"Item not found, waiting {delay} seconds and retrying...")
+                    logger.info(
+                        f"Item not found, waiting {delay} seconds and retrying..."
+                    )
                     time.sleep(delay)
                     continue
 
@@ -485,9 +512,10 @@ class ZoteroUploader:
                 logger.error(f"Error searching for item by URL: {e}")
                 break
 
-        logger.warning(f"Could not find item with URL: {url} after {max_attempts} attempts")
+        logger.warning(
+            f"Could not find item with URL: {url} after {max_attempts} attempts"
+        )
         return None
-
 
 
 if __name__ == "__main__":
