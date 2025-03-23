@@ -69,9 +69,16 @@ def configure_logger(
 configure_logger()
 
 
-def ensure_zotero_running() -> bool:
+def ensure_zotero_running(
+    connector_host: str = "http://127.0.0.1", 
+    connector_port: int = 23119
+) -> bool:
     """
     Check if Zotero is running and raise an exception if not.
+
+    Args:
+        connector_host: Zotero connector host address
+        connector_port: Zotero connector port number
 
     Returns:
         bool: True if Zotero is running
@@ -81,7 +88,7 @@ def ensure_zotero_running() -> bool:
     """
     try:
         # Try to contact the Zotero connector API
-        response = requests.post("http://127.0.0.1:23119/connector/ping", timeout=2)
+        response = requests.post(f"{connector_host}:{connector_port}/connector/ping", timeout=2)
         if response.status_code == 200:
             logger.info("Zotero is already running")
             return True

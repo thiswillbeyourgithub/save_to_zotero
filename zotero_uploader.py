@@ -85,7 +85,14 @@ class ZoteroUploader:
         assert not (pdf_path and url), "Must supply a url or a pdf but not both"
 
         # Make sure Zotero is running
-        ensure_zotero_running()
+        connector_host = connector_host or os.environ.get(
+            "ZOTERO_CONNECTOR_HOST", DEFAULT_CONNECTOR_HOST
+        )
+        connector_port = connector_port or int(
+            os.environ.get("ZOTERO_CONNECTOR_PORT", DEFAULT_CONNECTOR_PORT)
+        )
+        
+        ensure_zotero_running(connector_host, connector_port)
 
         api_key = api_key or os.environ.get("ZOTERO_API_KEY")
         library_id = library_id or os.environ.get("ZOTERO_LIBRARY_ID")
