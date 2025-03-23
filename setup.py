@@ -4,16 +4,10 @@ Setup script for save_to_zotero package.
 
 from setuptools import setup, find_packages
 
-# Get version from package
-with open("save_to_zotero/save_to_zotero.py", "r") as f:
-    for line in f:
-        if line.startswith("    VERSION: str ="):
-            version = line.split("=")[1].strip().strip('"\'')
-            break
 
 setup(
     name="save_to_zotero",
-    version=version,
+    version="0.1.0",,
     description="Save webpages as PDFs and add them to Zotero",
     author="save_to_zotero",
     author_email="",  # Add your email
