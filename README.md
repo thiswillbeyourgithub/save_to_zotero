@@ -2,6 +2,8 @@
 
 A powerful command-line tool for saving webpages as high-quality PDFs and adding them to your Zotero library with proper metadata. Also supports adding existing PDF files to Zotero.
 
+Note that this tool is quite new so if you find any bugs please open an issue!
+
 ## Personal Motivation
 
 I created this tool after [Omnivore](https://github.com/omnivore-app/omnivore) shut down, as I was searching for a good multiplatform solution for reading PDFs. Zotero proved to be a promising alternative, especially with its HTML annotation feature. However, I needed something that would work on my phone too. Until a complete solution was available, I decided to build this tool to convert webpages to PDFs for use with Zotero across all my devices. Once saved via this tool, all content is fully accessible on your phone, tablet, and any other device with a Zotero client.
