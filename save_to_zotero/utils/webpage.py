@@ -13,7 +13,7 @@ from typing import Dict, Any
 from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright, Page
 
-from .utils.misc import configure_logger
+from .misc import configure_logger
 
 # Configure module logger
 logger = configure_logger(__name__)
