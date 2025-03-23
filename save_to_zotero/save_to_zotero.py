@@ -7,7 +7,7 @@ import os
 import tempfile
 import time
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 import requests
 import shutil
 from pyzotero import zotero
@@ -151,7 +151,9 @@ class SaveToZotero:
         # Process based on what was provided
         if self.pdf_path:
             logger.info(f"Adding PDF {self.pdf_path} to Zotero...")
-            attachment_item = self.save_pdf_using_snapshot()
+            attachment_item, _ = self.save_pdf_using_snapshot()
+            # unfortunately the metadata cannot be stored in the extra field
+            # for an attachment as they do not accept an extra field
 
             # Remove the url as localhost was just for uploading the pdf
             local_url = attachment_item["data"]["url"]
@@ -179,7 +181,7 @@ class SaveToZotero:
 
             # Now also save the PDF as an attachment to this snapshot
             logger.info("Now let's create a PDF attachment for snapshot")
-            attachment_item = self.save_pdf_using_snapshot()
+            attachment_item, metadata = self.save_pdf_using_snapshot()
 
             # Update its URL to not be localhost
             logger.info("Waiting 10s for item to be available for update...")
@@ -195,6 +197,19 @@ class SaveToZotero:
             empty = self.zot.item(self.find_item_by_url(local_url, itemType="webpage"))
             if empty["meta"]["numChildren"] == 0:
                 self.zot.delete_item(empty)
+
+            # update the meta field of the webpage to contain metadata
+            webpage = self.zot.item(webpage_key)
+            webpage["data"]["extra"] = "\n".join(
+                [
+                    f"{k}: {v}"
+                    for k, v in metadata.items()
+                ]
+            )
+            metadata_update = self.zot.update_item(webpage)
+            logger.debug(f"Metadata update answer: {metadata_update}")
+
+            assert "success" in metadata_update and metadata_update["success"], attachment_item
 
             print(f"✓ Webpage item created with key: {webpage_key} with PDF attachment")
 
@@ -425,7 +440,7 @@ class SaveToZotero:
             logger.error(f"Unexpected error saving snapshot: {e}")
             raise
 
-    def save_pdf_using_snapshot(self) -> Dict:
+    def save_pdf_using_snapshot(self) -> Tuple[Dict, Dict]:
         """
         Save a pdf file using Zotero connector's saveSnapshot API.
 
@@ -507,18 +522,7 @@ class SaveToZotero:
         attachment_key = self.find_item_by_url(local_url, itemType="attachment")
         attachment_item = self.zot.item(attachment_key)
 
-        # update the meta field to contain metadata
-        attachment_item["data"]["extra"] = "\n".join(
-            [
-                f"{k}: {v}"
-                for k, v in metadata.items()
-            ]
-        )
-        metadata_update = self.zot.update_item(attachment_item)
-        logger.debug(f"Metadata update answer: {metadata_update}")
-        assert "success" in metadata_update and metadata_update["success"], attachment_item
-
-        return attachment_item
+        return attachment_item, metadata
 
     def find_item_by_url(
         self,
