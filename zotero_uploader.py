@@ -84,21 +84,6 @@ class ZoteroUploader:
 
         assert not (pdf_path and url), "Must supply a url or a pdf but not both"
 
-        # Make sure Zotero is running
-        connector_host = connector_host or os.environ.get(
-            "ZOTERO_CONNECTOR_HOST", DEFAULT_CONNECTOR_HOST
-        )
-        connector_port = connector_port or int(
-            os.environ.get("ZOTERO_CONNECTOR_PORT", DEFAULT_CONNECTOR_PORT)
-        )
-        
-        ensure_zotero_running(connector_host, connector_port)
-
-        api_key = api_key or os.environ.get("ZOTERO_API_KEY")
-        library_id = library_id or os.environ.get("ZOTERO_LIBRARY_ID")
-        library_type = library_type or os.environ.get("ZOTERO_LIBRARY_TYPE")
-        # No environment fallback for collection - only use collection_name
-
         # Connector host/port config with env var fallbacks
         self.connector_host = connector_host or os.environ.get(
             "ZOTERO_CONNECTOR_HOST", DEFAULT_CONNECTOR_HOST
@@ -106,6 +91,14 @@ class ZoteroUploader:
         self.connector_port = connector_port or int(
             os.environ.get("ZOTERO_CONNECTOR_PORT", DEFAULT_CONNECTOR_PORT)
         )
+        
+        # Make sure Zotero is running
+        ensure_zotero_running(self.connector_host, self.connector_port)
+
+        api_key = api_key or os.environ.get("ZOTERO_API_KEY")
+        library_id = library_id or os.environ.get("ZOTERO_LIBRARY_ID")
+        library_type = library_type or os.environ.get("ZOTERO_LIBRARY_TYPE")
+        # No environment fallback for collection - only use collection_name
 
         self.url = url
         self.pdf_path = Path(pdf_path) if pdf_path else None
