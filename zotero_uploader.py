@@ -164,6 +164,7 @@ class ZoteroUploader:
             attachment_item = self.save_pdf_using_snapshot()
 
             # Update its URL to not be localhost
+            time.sleep(10)
             local_url = attachment_item["data"]["url"]
             attachment_item["data"]["url"] = self.url
             attachment_item["data"]["parentItem"] = webpage_key
@@ -171,6 +172,7 @@ class ZoteroUploader:
 
             # now that we updated and moved the attachment we can delete
             # the now empty item with url localhost
+            time.sleep(10)
             empty = self.zot.item(self.find_item_by_url(local_url, itemType="webpage"))
             if empty["meta"]["numChildren"] == 0:
                 self.zot.delete_item(empty)
@@ -178,6 +180,7 @@ class ZoteroUploader:
             print(f"✓ Webpage item created with key: {webpage_key} with PDF attachment")
 
             # Add to collection if specified by name
+            time.sleep(10)
             if self.collection_name:
                 self.add_to_collection(webpage_key)
 
@@ -424,7 +427,7 @@ class ZoteroUploader:
 
         return attachment_item
 
-    def find_item_by_url(self, url: str, max_attempts: int = 3, delay: float = 5.0, itemType: str = "webpage") -> Optional[str]:
+    def find_item_by_url(self, url: str, max_attempts: int = 3, delay: float = 30.0, itemType: str = "webpage") -> Optional[str]:
         """
         Find a recently added Zotero item by its URL.
 
