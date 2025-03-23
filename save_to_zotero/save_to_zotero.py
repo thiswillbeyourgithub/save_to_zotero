@@ -575,6 +575,3 @@ class SaveToZotero:
             f"Could not find item with URL: {url} after {max_attempts} attempts"
         )
         return None
-
-
-# CLI execution moved to __main__.py
