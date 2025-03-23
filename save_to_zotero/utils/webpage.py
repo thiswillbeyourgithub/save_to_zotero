@@ -45,6 +45,12 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
     # Get user agent from environment variable or choose randomly
     user_agent = os.environ.get("ZOTERO_USER_AGENT", random.choice(user_agents))
 
+    viewport = {"width": 1280, "height": 900}  # Standard readable size
+    device_scale_factor = 1.5  # Good balance for text clarity
+    java_script_enabled = True
+    locale = "en-US"
+    timezone_id = "America/New_York"
+
     with sync_playwright() as p:
         # Configure browser with custom user agent and other options
         browser = p.chromium.launch(
@@ -54,11 +60,11 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
         # Create context with optimal reading settings for all devices
         context = browser.new_context(
             user_agent=user_agent,
-            viewport={"width": 1280, "height": 900},  # Standard readable size
-            device_scale_factor=1.5,  # Good balance for text clarity
-            java_script_enabled=True,
-            locale="en-US",
-            timezone_id="America/New_York",
+            viewport=viewport,
+            device_scale_factor=device_scale_factor,
+            java_script_enabled=java_script_enabled,
+            locale=locale,
+            timezone_id=timezone_id,
         )
 
         # Add humanizing attributes to prevent fingerprinting
@@ -94,6 +100,14 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
 
             # Extract metadata for later use
             metadata = get_webpage_metadata(page, url)
+
+            # add more metadata
+            metadata["user_agent"] = user_agent
+            metadata["viewport"] = viewport
+            metadata["device_scale_factor"] = device_scale_factor
+            metadata["java_script_enabled"] = java_script_enabled
+            metadata["locale"] = locale
+            metadata["timezone_id"] = timezone_id
 
             # Get the page title for metadata
             title = metadata["title"]
