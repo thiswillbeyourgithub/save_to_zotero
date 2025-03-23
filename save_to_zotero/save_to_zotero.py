@@ -184,6 +184,24 @@ class SaveToZotero:
             logger.info("Now let's create a PDF attachment for snapshot")
             attachment_item, metadata = self.save_pdf_using_snapshot()
 
+            # update the meta field of the webpage to contain metadata
+            logger.info("Updating metadata of webpage")
+            time.sleep(1)
+            webpage = self.zot.item(webpage_key)
+            metadata["save_to_zotero_version"] = self.VERSION
+            webpage["data"]["extra"] = "\n".join(
+                [
+                    f"{k}: {v}"
+                    for k, v in metadata.items()
+                ]
+            )
+            metadata_update = self.zot.update_item(webpage)
+            logger.debug(f"Metadata update answer: {metadata_update}")
+
+            assert metadata_update, (
+                        "Error when updating metadata of webpage "
+                        f"to '{webpage['data']['extra']}'")
+
             # Update its URL to not be localhost
             logger.info("Waiting 10s for item to be available for update...")
             time.sleep(10)
@@ -199,22 +217,6 @@ class SaveToZotero:
             empty = self.zot.item(self.find_item_by_url(local_url, itemType="webpage"))
             if empty["meta"]["numChildren"] == 0:
                 self.zot.delete_item(empty)
-
-            # update the meta field of the webpage to contain metadata
-            webpage = self.zot.item(webpage_key)
-            metadata["save_to_zotero_version"] = self.VERSION
-            webpage["data"]["extra"] = "\n".join(
-                [
-                    f"{k}: {v}"
-                    for k, v in metadata.items()
-                ]
-            )
-            metadata_update = self.zot.update_item(webpage)
-            logger.debug(f"Metadata update answer: {metadata_update}")
-
-            assert metadata_update, (
-                        "Error when updating metadata of webpage "
-                        f"to '{webpage['data']['extra']}'")
 
             print(f"✓ Webpage item created with key: {webpage_key} with PDF attachment")
 
