@@ -150,6 +150,7 @@ Contributions are very much welcome! We actively encourage the community to subm
 Future plans for save_to_zotero include:
 
 - **Enhanced Metadata Extraction**: Further improve metadata extraction for more accurate bibliographic records
+- **Implement Testing with pytest**: Add comprehensive test coverage using pytest to ensure reliability and facilitate future development
 
 If you'd like to contribute to any of these initiatives, please check the issues page or open a new discussion.
 
