@@ -52,7 +52,6 @@ class ZoteroUploader:
         self,
         url: Optional[str] = None,
         pdf_path: Optional[str] = None,
-        storage_dir: str = os.path.expanduser("~/Zotero/storage"),
         wait: int = 5000,
         api_key: Optional[str] = None,
         library_id: Optional[str] = None,
@@ -69,7 +68,6 @@ class ZoteroUploader:
         Args:
             url: The URL of the webpage to save (optional if pdf_path is provided)
             pdf_path: Path to an existing PDF file to add (optional if url is provided)
-            storage_dir: Directory where PDFs should be saved
             wait: Time to wait (ms) for the page to fully load (for URLs)
             api_key: Zotero API key (defaults to ZOTERO_API_KEY environment variable if not provided)
             library_id: Zotero library ID (defaults to ZOTERO_LIBRARY_ID environment variable if not provided)
@@ -105,7 +103,9 @@ class ZoteroUploader:
         self.url = url
         self.pdf_path = Path(pdf_path) if pdf_path else None
         self.wait = wait
-        self.storage_dir = Path(storage_dir)
+        # Create a temporary directory instead of using a fixed storage dir
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.storage_dir = Path(self.temp_dir.name)
         self.api_key = api_key
         self.library_id = library_id
         self.library_type = library_type
@@ -149,9 +149,8 @@ class ZoteroUploader:
             api_key,
         )
 
-        # Ensure storage directory exists
-        self.storage_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"Using storage directory: {self.storage_dir}")
+        # Temporary directory already exists, so we just log it
+        logger.info(f"Using temporary storage directory: {self.storage_dir}")
 
         # Process based on what was provided
         if self.pdf_path:
