@@ -21,7 +21,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 from loguru import logger
 from requests.exceptions import RequestException
-from save_to_zotero.utils.misc import (
+from .utils.misc import (
     find_available_port,
     configure_logger,
     ensure_zotero_running,
