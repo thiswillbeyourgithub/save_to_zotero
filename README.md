@@ -20,6 +20,7 @@ I created this tool after [Omnivore](https://github.com/omnivore-app/omnivore) s
 - Automatic metadata extraction from webpages (title, description, author, publication date)
 - Integration with Zotero's connector API for better reliability
 - Collection support for organizing your Zotero library (by name or key)
+- Tag support for better organization of your Zotero library
 - Human-like page scrolling and expansion of hidden content for better PDF captures
 - Intelligent handling of dynamic content like accordions and dropdowns
 - Smart title extraction for better file naming
@@ -42,22 +43,32 @@ save_to_zotero leverages several technologies to create a seamless experience:
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.7 or higher
 - Zotero desktop application (must be running during use)
 - Zotero API key (for remote operations)
+
+### Install from PyPI (Coming soon)
+
+```bash
+# Install directly from PyPI
+pip install save-to-zotero
+
+# Install Playwright browsers
+playwright install chromium
+```
 
 ### Install from source
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/save_to_zotero.git
+git clone https://github.com/thiswillbeyourgithub/save_to_zotero.git
 cd save_to_zotero
 
-# Install dependencies
-pip install requests fire playwright PyPDF2 loguru pyzotero>=1.6.11
+# Install the package and dependencies
+pip install -e .
 
-# Or using uv (faster)
-uv pip install requests fire playwright PyPDF2 loguru pyzotero>=1.6.11
+# Or using pip directly
+pip install requests fire playwright PyPDF2 loguru pyzotero>=1.6.11 platformdirs bibtexparser feedparser httpx
 
 # Install Playwright browsers
 playwright install chromium
@@ -69,30 +80,34 @@ playwright install chromium
 
 ```bash
 # Save a webpage to Zotero
-python save_to_zotero.py --url="https://example.com/article"
+save-to-zotero --url="https://example.com/article"
 
 # Add an existing PDF file to Zotero
-python save_to_zotero.py --pdf_path="/path/to/document.pdf"
+save-to-zotero --pdf_path="/path/to/document.pdf"
 
 # Add to a specific collection
-python save_to_zotero.py --url="https://example.com/article" --collection_name="Research Papers"
+save-to-zotero --url="https://example.com/article" --collection_name="Research Papers"
+
+# Add tags to the item
+save-to-zotero --url="https://example.com/article" --tags="research,important,to-read"
 ```
 
 ### Advanced Options
 
 ```bash
 # Full options
-python save_to_zotero.py \
+save-to-zotero \
   --url="https://example.com/article" \
   --wait=8000 \
   --api_key="your_zotero_api_key" \
   --library_id="your_library_id" \
   --library_type="user" \
   --collection_name="Research Papers" \
+  --tags="research,important" \
   --verbose=True
 
 # For pages with complex JavaScript content, increase wait time
-python save_to_zotero.py --url="https://complex-site.com/article" --wait=10000
+save-to-zotero --url="https://complex-site.com/article" --wait=10000
 ```
 
 ### Environment Variables
@@ -169,12 +184,10 @@ pip install -e ".[dev]"  # Once setup.py is implemented
 
 Future plans for save_to_zotero include:
 
-- **PyPI Installation**: Package the tool for easy installation via pip with `pip install save-to-zotero`
-- **CLI Tool via entry points**: Create a streamlined command-line interface with proper entry points
+- **PyPI Publication**: Publish the package on PyPI for easier installation
 - **Enhanced Metadata Extraction**: Further improve metadata extraction for more accurate bibliographic records
 - **Batch Processing**: Support for processing multiple URLs or PDFs in a single command
 - **Custom PDF Templates**: Allow users to define custom styling for PDF output
-- **Tag Support**: Add ability to apply tags to saved items
 - **Integration with Browser Extensions**: Develop browser extensions to send URLs directly to the tool
 - **Site-specific Handling**: Special handling for common sites like academic journals and news publications
 - **Proxy Support**: Enable use with institutional proxies for accessing paywalled content
