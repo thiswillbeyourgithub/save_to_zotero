@@ -3,5 +3,6 @@
 reference
 __pycache__
 **.egg-info
+dist
 **/*.log
 *.pdf
