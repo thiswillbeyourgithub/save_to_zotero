@@ -71,10 +71,13 @@ configure_logger()
 
 def ensure_zotero_running() -> bool:
     """
-    Check if Zotero is running and try to start it if not.
+    Check if Zotero is running and raise an exception if not.
 
     Returns:
-        bool: True if Zotero is running or was successfully started
+        bool: True if Zotero is running
+
+    Raises:
+        RuntimeError: If Zotero is not running
     """
     try:
         # Try to contact the Zotero connector API
@@ -83,38 +86,9 @@ def ensure_zotero_running() -> bool:
             logger.info("Zotero is already running")
             return True
     except requests.exceptions.RequestException:
-        logger.warning("Zotero doesn't appear to be running")
-
-        # Try to start Zotero (platform-dependent)
-        try:
-            if os.name == "nt":  # Windows
-                subprocess.Popen(["start", "zotero"], shell=True)
-            elif os.name == "posix":  # Linux/macOS
-                if Path("/Applications/Zotero.app").exists():  # macOS
-                    subprocess.Popen(["open", "/Applications/Zotero.app"])
-                else:  # Linux
-                    subprocess.Popen(["zotero"])
-
-            # Wait for Zotero to start
-            logger.info("Waiting for Zotero to start...")
-            for _ in range(15):  # Try for 15 seconds
-                time.sleep(1)
-                try:
-                    response = requests.post(
-                        "http://127.0.0.1:23119/connector/ping", timeout=2
-                    )
-                    if response.status_code == 200:
-                        logger.info("Zotero started successfully")
-                        return True
-                except requests.exceptions.RequestException:
-                    pass
-
-            logger.warning("Timed out waiting for Zotero to start")
-            return False
-
-        except Exception as e:
-            logger.error(f"Failed to start Zotero: {e}")
-            return False
+        error_msg = "Zotero is not running. Please start Zotero manually before continuing."
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
 
     return True
 
