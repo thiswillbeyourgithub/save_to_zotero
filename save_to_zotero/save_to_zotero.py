@@ -26,7 +26,7 @@ from .utils.misc import (
     configure_logger,
     ensure_zotero_running,
 )
-from save_to_zotero.utils.webpage import (
+from .utils.webpage import (
     save_webpage_as_pdf,
     get_webpage_metadata,
     SimpleHTTPServerThread,
