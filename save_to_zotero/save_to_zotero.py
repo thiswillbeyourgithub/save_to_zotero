@@ -41,7 +41,7 @@ class SaveToZotero:
     Class for uploading webpages to Zotero as PDF attachments.
     """
 
-    VERSION: str = "1.0.7"
+    VERSION: str = "1.0.8"
 
     def __init__(
         self,
