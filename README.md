@@ -8,7 +8,7 @@ A powerful command-line tool for saving webpages as high-quality PDFs and adding
 
 ## Personal Motivation
 
-I created this tool after Omnivore shut down, as I was searching for a good multiplatform solution for reading PDFs. Zotero proved to be a promising alternative, especially with its HTML annotation feature. However, I needed something that would work on my phone too. Until a complete solution was available, I decided to build this tool to convert webpages to PDFs for use with Zotero across all my devices.
+I created this tool after [Omnivore](https://github.com/omnivore-app/omnivore) shut down, as I was searching for a good multiplatform solution for reading PDFs. Zotero proved to be a promising alternative, especially with its HTML annotation feature. However, I needed something that would work on my phone too. Until a complete solution was available, I decided to build this tool to convert webpages to PDFs for use with Zotero across all my devices.
 
 ## Features
 
@@ -180,3 +180,7 @@ Future plans for save_to_zotero include:
 - **PDF Text Layer**: Ensure PDFs have searchable text layers
 
 If you'd like to contribute to any of these initiatives, please check the issues page or open a new discussion.
+
+## Credits
+
+- [Pyzotero](https://github.com/urschrei/pyzotero) - Python client for the Zotero API
