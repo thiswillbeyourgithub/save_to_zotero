@@ -11,9 +11,10 @@ setup(
     description="Save webpages as PDFs and add them to Zotero",
     author="save_to_zotero",
     author_email="",  # Add your email
-    url="https://github.com/yourusername/save_to_zotero",  # Change this to your repo
+    url="https://github.com/thiswillbeyourgithub/save_to_zotero",  # Change this to your repo
     packages=find_packages(),
     include_package_data=True,
+    license="GPLv3",
     install_requires=[
         "fire==0.7.0",
         "pyzotero==1.6.11",
