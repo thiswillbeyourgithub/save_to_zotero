@@ -1,4 +1,4 @@
-# Zotero Uploader
+# save_to_zotero
 
 A powerful command-line tool for saving webpages as high-quality PDFs and adding them to your Zotero library with proper metadata. Also supports adding existing PDF files to Zotero.
 
@@ -25,7 +25,7 @@ I created this tool after Omnivore shut down, as I was searching for a good mult
 
 ## How It Works
 
-Zotero Uploader leverages several technologies to create a seamless experience:
+save_to_zotero leverages several technologies to create a seamless experience:
 
 1. **Webpage Capture**: Uses Playwright to render webpages with a real browser engine, capturing all content including JavaScript-rendered content, expandable sections, and proper formatting.
 
@@ -49,8 +49,8 @@ Zotero Uploader leverages several technologies to create a seamless experience:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/zotero-uploader.git
-cd zotero-uploader
+git clone https://github.com/yourusername/save_to_zotero.git
+cd save_to_zotero
 
 # Install dependencies
 pip install requests fire playwright PyPDF2 loguru pyzotero>=1.6.11
@@ -68,20 +68,20 @@ playwright install chromium
 
 ```bash
 # Save a webpage to Zotero
-python zotero_uploader.py --url="https://example.com/article"
+python save_to_zotero.py --url="https://example.com/article"
 
 # Add an existing PDF file to Zotero
-python zotero_uploader.py --pdf_path="/path/to/document.pdf"
+python save_to_zotero.py --pdf_path="/path/to/document.pdf"
 
 # Add to a specific collection
-python zotero_uploader.py --url="https://example.com/article" --collection_name="Research Papers"
+python save_to_zotero.py --url="https://example.com/article" --collection_name="Research Papers"
 ```
 
 ### Advanced Options
 
 ```bash
 # Full options
-python zotero_uploader.py \
+python save_to_zotero.py \
   --url="https://example.com/article" \
   --wait=8000 \
   --api_key="your_zotero_api_key" \
@@ -91,7 +91,7 @@ python zotero_uploader.py \
   --verbose=True
 
 # For pages with complex JavaScript content, increase wait time
-python zotero_uploader.py --url="https://complex-site.com/article" --wait=10000
+python save_to_zotero.py --url="https://complex-site.com/article" --wait=10000
 ```
 
 ### Environment Variables
@@ -153,8 +153,8 @@ Contributions are very much welcome! We actively encourage the community to subm
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/zotero-uploader.git
-cd zotero-uploader
+git clone https://github.com/yourusername/save_to_zotero.git
+cd save_to_zotero
 
 # Create a virtual environment (optional but recommended)
 python -m venv venv
@@ -166,9 +166,9 @@ pip install -e ".[dev]"  # Once setup.py is implemented
 
 ## Roadmap
 
-Future plans for Zotero Uploader include:
+Future plans for save_to_zotero include:
 
-- **PyPI Installation**: Package the tool for easy installation via pip with `pip install zotero-uploader`
+- **PyPI Installation**: Package the tool for easy installation via pip with `pip install save-to-zotero`
 - **CLI Tool via entry points**: Create a streamlined command-line interface with proper entry points
 - **Enhanced Metadata Extraction**: Further improve metadata extraction for more accurate bibliographic records
 - **Batch Processing**: Support for processing multiple URLs or PDFs in a single command
