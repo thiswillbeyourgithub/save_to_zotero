@@ -505,6 +505,17 @@ class SaveToZotero:
         attachment_key = self.find_item_by_url(local_url, itemType="attachment")
         attachment_item = self.zot.item(attachment_key)
 
+        # update the meta field to contain metadata
+        attachment_item["data"]["extra"] = "\n".join(
+            [
+                f"{k}: {v}"
+                for k, v in metadata.items()
+            ]
+        )
+        metadata_update = self.zot.update_item(attachment_item)
+        logger.debug(f"Metadata update answer: {metadata_update}")
+        assert "success" in metadata_update and metadata_update["success"], attachment_item
+
         return attachment_item
 
     def find_item_by_url(
