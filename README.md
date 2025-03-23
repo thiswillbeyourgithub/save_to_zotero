@@ -16,10 +16,12 @@ I created this tool after Omnivore shut down, as I was searching for a good mult
 - Works whether you use Zotero's or WebDAV backend for storage
 - Add PDFs to Zotero with proper metadata extraction
 - Support for existing PDF files without webpage sources
-- Automatic metadata extraction from webpages
+- Automatic metadata extraction from webpages (title, description, author, publication date)
 - Integration with Zotero's connector API for better reliability
-- Collection support for organizing your Zotero library (by name)
+- Collection support for organizing your Zotero library (by name or key)
 - Human-like page scrolling and expansion of hidden content for better PDF captures
+- Intelligent handling of dynamic content like accordions and dropdowns
+- Smart title extraction for better file naming
 
 ## How It Works
 
@@ -29,9 +31,11 @@ Zotero Uploader leverages several technologies to create a seamless experience:
 
 2. **High-Quality PDF Generation**: Creates PDFs with optimal formatting for reading and storage, including automatic expansion of hidden content, proper scrolling to capture all page elements, and preservation of images and formatting.
 
-3. **Metadata Extraction**: Extracts key metadata like title from the webpage to create rich Zotero entries.
+3. **Metadata Extraction**: Extracts key metadata (title, description, author, publication date) from the webpage to create rich Zotero entries.
 
 4. **Zotero Integration**: Communicates with your Zotero library through both the Zotero API and the Zotero Connector API to ensure items are properly indexed and accessible.
+
+5. **Anti-Detection Measures**: Uses randomized user agents and anti-fingerprinting techniques to bypass website restrictions.
 
 ## Installation
 
@@ -49,10 +53,13 @@ git clone https://github.com/yourusername/zotero-uploader.git
 cd zotero-uploader
 
 # Install dependencies
-uv pip install requests fire playwright pypdf2 loguru pyzotero>=1.6.11
+pip install requests fire playwright PyPDF2 loguru pyzotero>=1.6.11
+
+# Or using uv (faster)
+uv pip install requests fire playwright PyPDF2 loguru pyzotero>=1.6.11
 
 # Install Playwright browsers
-playwright install
+playwright install chromium
 ```
 
 ## Usage
@@ -65,6 +72,9 @@ python zotero_uploader.py --url="https://example.com/article"
 
 # Add an existing PDF file to Zotero
 python zotero_uploader.py --pdf_path="/path/to/document.pdf"
+
+# Add to a specific collection
+python zotero_uploader.py --url="https://example.com/article" --collection_name="Research Papers"
 ```
 
 ### Advanced Options
@@ -73,13 +83,15 @@ python zotero_uploader.py --pdf_path="/path/to/document.pdf"
 # Full options
 python zotero_uploader.py \
   --url="https://example.com/article" \
-  --storage_dir="/path/to/zotero/storage" \
   --wait=8000 \
   --api_key="your_zotero_api_key" \
   --library_id="your_library_id" \
   --library_type="user" \
   --collection_name="Research Papers" \
   --verbose=True
+
+# For pages with complex JavaScript content, increase wait time
+python zotero_uploader.py --url="https://complex-site.com/article" --wait=10000
 ```
 
 ### Environment Variables
@@ -90,8 +102,11 @@ You can set default values using environment variables:
 # Add these to your .bashrc, .zshrc, etc.
 export ZOTERO_API_KEY="your_api_key"
 export ZOTERO_LIBRARY_ID="your_library_id"
-export ZOTERO_LIBRARY_TYPE="user"
+export ZOTERO_LIBRARY_TYPE="user"  # "user" or "group"
 export ZOTERO_COLLECTION_NAME="collection_name"
+export ZOTERO_CONNECTOR_HOST="http://127.0.0.1"  # Default connector host
+export ZOTERO_CONNECTOR_PORT="23119"  # Default connector port
+export ZOTERO_USER_AGENT="your_custom_user_agent"  # Optional
 ```
 
 ## Configuration
@@ -100,15 +115,31 @@ export ZOTERO_COLLECTION_NAME="collection_name"
 
 1. Get your Zotero API key from https://www.zotero.org/settings/keys
 2. Ensure the API key has read/write access to your library
-3. Get your library ID from your Zotero profile URL (e.g., `https://www.zotero.org/username` - username is the library ID for user libraries)
+3. Get your library ID from your Zotero profile URL:
+   - For personal libraries: Your username is your library ID (e.g., `https://www.zotero.org/username`)
+   - For group libraries: The numeric ID in the URL (e.g., `https://www.zotero.org/groups/1234567`)
+
+### Connector Configuration
+
+The tool communicates with Zotero through its connector API, which requires Zotero to be running. By default, it connects to:
+
+- Host: http://127.0.0.1
+- Port: 23119
+
+These can be configured using environment variables if needed.
 
 ## Troubleshooting
 
-- **Zotero Must Be Running**: The tool requires Zotero to be running.
-- **PDF Generation Issues**: Increase the wait time for complex pages with the `--wait` parameter (default is 5000ms).
-- **Collection Not Found**: Ensure you're using the correct collection collection name.
-- **API Authorization Errors**: Verify your API key has proper permissions.
-- **Connector Issues**: Make sure Zotero connector is properly configured (default is http://127.0.0.1:23119, configurable by env variables).
+- **Zotero Must Be Running**: The tool requires the Zotero desktop application to be running.
+- **PDF Generation Issues**: 
+  - Increase the wait time for complex pages with the `--wait` parameter (default is 5000ms)
+  - For pages with infinite scroll, consider capturing a specific section rather than the entire page
+- **Collection Not Found**: Ensure you're using the correct collection name exactly as it appears in Zotero.
+- **API Authorization Errors**: Verify your API key has proper permissions and is entered correctly.
+- **Connector Issues**: 
+  - Ensure Zotero is running before executing the command
+  - Check if Zotero is using a non-standard port (can be verified in Zotero's Advanced preferences)
+- **PDF Scrolling Problems**: For very long pages, try breaking the capture into sections.
 
 ## License
 
@@ -118,16 +149,34 @@ This project is licensed under the GNU General Public License v3.0 - see the LIC
 
 Contributions are very much welcome! We actively encourage the community to submit Pull Requests for any of the roadmap items or your own ideas. Whether it's fixing bugs, improving documentation, or implementing new features, your contributions will help make this project better for everyone.
 
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/zotero-uploader.git
+cd zotero-uploader
+
+# Create a virtual environment (optional but recommended)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install development dependencies
+pip install -e ".[dev]"  # Once setup.py is implemented
+```
+
 ## Roadmap
 
 Future plans for Zotero Uploader include:
 
 - **PyPI Installation**: Package the tool for easy installation via pip with `pip install zotero-uploader`
-- **CLI Tool via uvx**: Create a streamlined command-line interface using uvx for improved user experience
-- **Enhanced Metadata Extraction**: Improve metadata extraction to include authors, publication dates, and more
+- **CLI Tool via entry points**: Create a streamlined command-line interface with proper entry points
+- **Enhanced Metadata Extraction**: Further improve metadata extraction for more accurate bibliographic records
 - **Batch Processing**: Support for processing multiple URLs or PDFs in a single command
 - **Custom PDF Templates**: Allow users to define custom styling for PDF output
-- **Integration with Reference Managers**: Extend support beyond Zotero to other reference management systems
-- **Improved Error Handling**: Better recovery from network issues and Zotero API limitations
+- **Tag Support**: Add ability to apply tags to saved items
+- **Integration with Browser Extensions**: Develop browser extensions to send URLs directly to the tool
+- **Site-specific Handling**: Special handling for common sites like academic journals and news publications
+- **Proxy Support**: Enable use with institutional proxies for accessing paywalled content
+- **PDF Text Layer**: Ensure PDFs have searchable text layers
 
 If you'd like to contribute to any of these initiatives, please check the issues page or open a new discussion.
