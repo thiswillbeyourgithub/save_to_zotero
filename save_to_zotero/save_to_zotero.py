@@ -55,7 +55,7 @@ class ZoteroUploader:
         collection_name: Optional[str] = None,
         connector_host: Optional[str] = None,
         connector_port: Optional[int] = None,
-        tags: Optional[str] = None,
+        tags: str = "save_to_zotero",
         verbose: bool = False,
     ):
         """
@@ -72,6 +72,7 @@ class ZoteroUploader:
             collection_name: Collection name to add the item to (will search for a collection with this name)
             connector_host: Zotero connector host (defaults to ZOTERO_CONNECTOR_HOST environment variable or http://127.0.0.1)
             connector_port: Zotero connector port (defaults to ZOTERO_CONNECTOR_PORT environment variable or 23119)
+            tags: Comma-separated list of tags to add to the item (defaults to "save_to_zotero")
             verbose: Enable verbose logging
 
         """
