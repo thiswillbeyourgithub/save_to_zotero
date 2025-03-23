@@ -1,6 +1,9 @@
 # Zotero Uploader
 
 A powerful command-line tool for saving webpages as high-quality PDFs and adding them to your Zotero library with proper metadata. Also supports adding existing PDF files to Zotero.
+
+**Version:** 0.1.0
+
 **WARNING: THIS IS A WORK IN PROGRESS**
 
 ## Personal Motivation
@@ -10,12 +13,13 @@ I created this tool after Omnivore shut down, as I was searching for a good mult
 ## Features
 
 - Save any webpage as a high-quality PDF using Playwright's browser automation
-- Works wether you use Zotero's or Webdav backend for storage
+- Works whether you use Zotero's or WebDAV backend for storage
 - Add PDFs to Zotero with proper metadata extraction
 - Support for existing PDF files without webpage sources
-- Automatic metadata extraction from webpages and PDF files
+- Automatic metadata extraction from webpages
+- Integration with Zotero's connector API for better reliability
 - Proper integration with Zotero's storage system and full-text indexing
-- Collection support for organizing your Zotero library
+- Collection support for organizing your Zotero library (by name or key)
 - Human-like page scrolling and expansion of hidden content for better PDF captures
 
 ## How It Works
@@ -26,9 +30,9 @@ Zotero Uploader leverages several technologies to create a seamless experience:
 
 2. **High-Quality PDF Generation**: Creates PDFs with optimal formatting for reading and storage, including automatic expansion of hidden content, proper scrolling to capture all page elements, and preservation of images and formatting.
 
-3. **Metadata Extraction**: Extracts key metadata like title, author, publication date, and description from the webpage to create rich Zotero entries.
+3. **Metadata Extraction**: Extracts key metadata like title from the webpage to create rich Zotero entries.
 
-4. **Zotero Integration**: Communicates with your Zotero library through both the Zotero API and direct file storage integration to ensure items are properly indexed and accessible.
+4. **Zotero Integration**: Communicates with your Zotero library through both the Zotero API and the Zotero Connector API to ensure items are properly indexed and accessible.
 
 ## Installation
 
@@ -106,9 +110,10 @@ By default, the tool uses a standard Zotero storage location. You can specify an
 ## Troubleshooting
 
 - **Zotero Must Be Running**: The tool requires Zotero to be running and will attempt to start it if not detected.
-- **PDF Generation Issues**: Increase the wait time for complex pages with the `--wait` parameter.
-- **Collection Not Found**: Ensure you're using the correct collection key or name.
+- **PDF Generation Issues**: Increase the wait time for complex pages with the `--wait` parameter (default is 5000ms).
+- **Collection Not Found**: Ensure you're using the correct collection key or provide the exact collection name.
 - **API Authorization Errors**: Verify your API key has proper permissions.
+- **Connector Issues**: Make sure Zotero connector is properly configured (default is http://127.0.0.1:23119).
 
 ## License
 
@@ -124,9 +129,10 @@ Future plans for Zotero Uploader include:
 
 - **PyPI Installation**: Package the tool for easy installation via pip with `pip install zotero-uploader`
 - **CLI Tool via uvx**: Create a streamlined command-line interface using uvx for improved user experience
-- **HTML Snapshot Support**: Add functionality to save the original HTML of webpages alongside the PDF
+- **Enhanced Metadata Extraction**: Improve metadata extraction to include authors, publication dates, and more
 - **Batch Processing**: Support for processing multiple URLs or PDFs in a single command
 - **Custom PDF Templates**: Allow users to define custom styling for PDF output
 - **Integration with Reference Managers**: Extend support beyond Zotero to other reference management systems
+- **Improved Error Handling**: Better recovery from network issues and Zotero API limitations
 
 If you'd like to contribute to any of these initiatives, please check the issues page or open a new discussion.
