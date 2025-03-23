@@ -26,12 +26,12 @@ import io
 import PyPDF2
 from loguru import logger
 from requests.exceptions import RequestException
-from utils.misc import (
+from save_to_zotero.utils.misc import (
     find_available_port,
     configure_logger,
     ensure_zotero_running,
 )
-from utils.webpage import (
+from save_to_zotero.utils.webpage import (
     save_webpage_as_pdf,
     get_webpage_metadata,
     SimpleHTTPServerThread,

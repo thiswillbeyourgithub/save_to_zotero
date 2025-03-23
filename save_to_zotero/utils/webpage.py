@@ -14,7 +14,7 @@ from typing import Dict, Any, List, Optional
 from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright, Page, BrowserContext
 
-from utils.misc import configure_logger
+from save_to_zotero.utils.misc import configure_logger
 
 # Configure module logger
 logger = configure_logger(__name__)
