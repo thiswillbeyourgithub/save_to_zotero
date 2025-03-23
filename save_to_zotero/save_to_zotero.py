@@ -36,7 +36,7 @@ from save_to_zotero.utils.webpage import (
 configure_logger(__name__)
 
 
-class ZoteroUploader:
+class SaveToZotero:
     """
     Class for uploading webpages to Zotero as PDF attachments.
     """
@@ -438,7 +438,7 @@ class ZoteroUploader:
             The attachment item data if successful
         """
         # Use a temporary directory to store the PDF before attaching
-        pdf_dir = Path(self.storage_dir) / "ZoteroUploader"
+        pdf_dir = Path(self.storage_dir) / "SaveToZotero"
         pdf_dir.mkdir(parents=True, exist_ok=True)
 
         # Create a temporary filename

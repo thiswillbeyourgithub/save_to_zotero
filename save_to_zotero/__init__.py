@@ -2,6 +2,10 @@
 save_to_zotero - Save webpages as PDFs and add them to Zotero.
 """
 
-from .save_to_zotero import ZoteroUploader
+from . import utils
+from .save_to_zotero import SaveToZotero
 
-__version__ = ZoteroUploader.VERSION
+__version__ = SaveToZotero.VERSION
+
+__all__ = ["SaveToZotero", "utils"]
+
