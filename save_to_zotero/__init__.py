@@ -7,4 +7,3 @@ from .save_to_zotero import SaveToZotero
 __version__ = SaveToZotero.VERSION
 
 __all__ = ["SaveToZotero"]
-
