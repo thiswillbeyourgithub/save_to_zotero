@@ -33,7 +33,6 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="save_to_zotero",
-    author_email="",  # Add your email
     url="https://github.com/thiswillbeyourgithub/save_to_zotero",  # Change this to your repo
     packages=find_packages(),
     include_package_data=True,
