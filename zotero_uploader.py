@@ -183,6 +183,7 @@ class ZoteroUploader:
             attachment_item = self.save_pdf_using_snapshot()
 
             # Update its URL to not be localhost
+            logger.info("Waiting 10s for item to be available for update...")
             time.sleep(10)
             local_url = attachment_item["data"]["url"]
             attachment_item["data"]["url"] = self.url
@@ -191,6 +192,7 @@ class ZoteroUploader:
 
             # now that we updated and moved the attachment we can delete
             # the now empty item with url localhost
+            logger.info("Waiting 10s for attachment update to be processed...")
             time.sleep(10)
             empty = self.zot.item(self.find_item_by_url(local_url, itemType="webpage"))
             if empty["meta"]["numChildren"] == 0:
@@ -199,6 +201,7 @@ class ZoteroUploader:
             print(f"✓ Webpage item created with key: {webpage_key} with PDF attachment")
 
             # Add to collection if specified by name
+            logger.info("Waiting 10s before adding to collection...")
             time.sleep(10)
             if self.collection_name:
                 self.add_to_collection(webpage_key)
