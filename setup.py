@@ -42,12 +42,8 @@ setup(
         "pyzotero>=1.6.11",
         "playwright>=1.51.0",
         "requests>=2.32.3",
-        "pypdf>=3.9.0",
         "loguru>=0.7.3",
         "platformdirs>=4.3.7",
-        "bibtexparser>=1.4.3",
-        "feedparser>=6.0.11",
-        "httpx>=0.28.1",
     ],
     entry_points={
         "console_scripts": [
