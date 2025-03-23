@@ -156,7 +156,6 @@ class SaveToZotero:
             # Update its URL to not be localhost
             local_url = attachment_item["data"]["url"]
             del attachment_item["data"]["url"]
-            attachment_resp = self.zot.update_item(attachment_item)
 
             attachment_key = attachment_item["data"]["key"]
 
@@ -170,16 +169,16 @@ class SaveToZotero:
             if self.collection_name:
                 self.add_to_collection(attachment_key)
 
-            print(f"✓ PDF attachment added successfully")
+            print("✓ PDF attachment added successfully")
         else:
             logger.info(f"Saving {self.url} to Zotero...")
 
-            logger.info(f"Saving url using the connector API")
+            logger.info("Saving url using the connector API")
             webpage_key = self.save_url_using_snapshot()
             logger.info(f"Snapshot was created with key: {webpage_key}")
 
             # Now also save the PDF as an attachment to this snapshot
-            logger.info(f"Now let's create a PDF attachment for snapshot")
+            logger.info("Now let's create a PDF attachment for snapshot")
             attachment_item = self.save_pdf_using_snapshot()
 
             # Update its URL to not be localhost
@@ -188,7 +187,6 @@ class SaveToZotero:
             local_url = attachment_item["data"]["url"]
             attachment_item["data"]["url"] = self.url
             attachment_item["data"]["parentItem"] = webpage_key
-            attachment_resp = self.zot.update_item(attachment_item)
 
             # now that we updated and moved the attachment we can delete
             # the now empty item with url localhost
@@ -464,7 +462,7 @@ class SaveToZotero:
         logger.info("Attaching PDF to the webpage item")
 
         # Start a local HTTP server in a thread to serve the PDF
-        logger.info(f"Starting the local http server to serve the PDF")
+        logger.info("Starting the local http server to serve the PDF")
         server_port = find_available_port(start_port=25852)
         server = SimpleHTTPServerThread(pdf_dir, server_port)
         server.start()
