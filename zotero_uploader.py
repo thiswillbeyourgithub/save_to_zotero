@@ -287,7 +287,7 @@ class ZoteroUploader:
             return False
 
 
-    def save_url_using_snapshot(self) -> dict:
+    def save_url_using_snapshot(self) -> Optional[str]:
         """
         Save a URL using Zotero connector's saveSnapshot API.
 
@@ -363,7 +363,7 @@ class ZoteroUploader:
             logger.error(f"Unexpected error saving snapshot: {e}")
             raise
 
-    def save_pdf_using_snapshot(self) -> dict:
+    def save_pdf_using_snapshot(self) -> Dict[str, Any]:
         """
         Save a pdf file using Zotero connector's saveSnapshot API.
 
@@ -371,7 +371,7 @@ class ZoteroUploader:
         via its connector API to save a local pdf using the connector API.
 
         Returns:
-            The parent item key if successful, None otherwise
+            The attachment item data if successful
         """
         # Use a temporary directory to store the PDF before attaching
         pdf_dir = Path(self.storage_dir) / "ZoteroUploader"
@@ -447,7 +447,7 @@ class ZoteroUploader:
             url: The URL to search for
             max_attempts: Maximum number of attempts to find the item
             delay: Delay between attempts in seconds
-            itemType: For example 'webpage' or 'attachment'
+            itemType: The type of item to search for (e.g., 'webpage' or 'attachment')
 
         Returns:
             The item key if found, None otherwise
