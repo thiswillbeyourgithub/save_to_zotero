@@ -18,8 +18,7 @@ I created this tool after Omnivore shut down, as I was searching for a good mult
 - Support for existing PDF files without webpage sources
 - Automatic metadata extraction from webpages
 - Integration with Zotero's connector API for better reliability
-- Proper integration with Zotero's storage system and full-text indexing
-- Collection support for organizing your Zotero library (by name or key)
+- Collection support for organizing your Zotero library (by name)
 - Human-like page scrolling and expansion of hidden content for better PDF captures
 
 ## How It Works
@@ -103,17 +102,13 @@ export ZOTERO_COLLECTION_NAME="collection_name"
 2. Ensure the API key has read/write access to your library
 3. Get your library ID from your Zotero profile URL (e.g., `https://www.zotero.org/username` - username is the library ID for user libraries)
 
-### Storage Directory
-
-By default, the tool uses a standard Zotero storage location. You can specify an alternate location with the `--storage_dir` option.
-
 ## Troubleshooting
 
-- **Zotero Must Be Running**: The tool requires Zotero to be running and will attempt to start it if not detected.
+- **Zotero Must Be Running**: The tool requires Zotero to be running.
 - **PDF Generation Issues**: Increase the wait time for complex pages with the `--wait` parameter (default is 5000ms).
-- **Collection Not Found**: Ensure you're using the correct collection key or provide the exact collection name.
+- **Collection Not Found**: Ensure you're using the correct collection collection name.
 - **API Authorization Errors**: Verify your API key has proper permissions.
-- **Connector Issues**: Make sure Zotero connector is properly configured (default is http://127.0.0.1:23119).
+- **Connector Issues**: Make sure Zotero connector is properly configured (default is http://127.0.0.1:23119, configurable by env variables).
 
 ## License
 
