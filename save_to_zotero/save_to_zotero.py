@@ -158,7 +158,8 @@ class SaveToZotero:
             # Remove the url as localhost was just for uploading the pdf
             local_url = attachment_item["data"]["url"]
             del attachment_item["data"]["url"]
-            self.zot.update_item(attachment_item)
+            update_resp = self.zot.update_item(attachment_item)
+            logger.debug(f"Update item response: {update_resp}")
 
             attachment_key = attachment_item["data"]["key"]
 
@@ -208,7 +209,8 @@ class SaveToZotero:
             local_url = attachment_item["data"]["url"]
             attachment_item["data"]["url"] = self.url
             attachment_item["data"]["parentItem"] = webpage_key
-            self.zot.update_item(attachment_item)
+            update_resp = self.zot.update_item(attachment_item)
+            logger.debug(f"Update item response: {update_resp}")
 
             # now that we updated and moved the attachment we can delete
             # the now empty item with url localhost
