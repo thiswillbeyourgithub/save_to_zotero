@@ -1,7 +1,6 @@
 .aider*
 .env
-pyzotero_clone
 reference
 __pycache__
-*.log
+**/*.log
 *.pdf
