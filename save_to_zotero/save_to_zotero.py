@@ -23,7 +23,7 @@ from playwright.sync_api import sync_playwright
 from pathlib import Path
 from urllib.parse import urlparse
 import io
-import PyPDF2
+import pypdf
 from loguru import logger
 from requests.exceptions import RequestException
 from save_to_zotero.utils.misc import (
