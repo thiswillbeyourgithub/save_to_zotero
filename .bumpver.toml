@@ -1,0 +1,16 @@
+[bumpver]
+current_version = "0.1.0"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message = "bump version {old_version} -> {new_version}"
+commit = true
+tag = true
+push = false
+
+[bumpver.file_patterns]
+"save_to_zotero/save_to_zotero.py" = [
+    '    VERSION: str = "{version}"',
+]
+
+"setup.py" = [
+    'version="{version}"',
+]
