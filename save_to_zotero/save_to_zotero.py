@@ -577,5 +577,4 @@ class ZoteroUploader:
         return None
 
 
-if __name__ == "__main__":
-    fire.Fire(ZoteroUploader)
+# CLI execution moved to __main__.py
