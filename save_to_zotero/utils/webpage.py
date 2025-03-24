@@ -207,7 +207,8 @@ def _simulate_scrolling(page: Page) -> None:
 def _expand_hidden_elements(page: Page) -> None:
     """
     Expand dropdowns, accordions, and other hidden content to ensure
-    all text is visible in the PDF.
+    all text is visible in the PDF. Also removes popups and subscribe boxes
+    that might block content.
 
     Args:
         page: The Playwright page object
@@ -216,7 +217,127 @@ def _expand_hidden_elements(page: Page) -> None:
         # Consistent small delay before expanding elements
         time.sleep(200 / 1000)
 
-        # Execute JavaScript to expand common interactive elements
+        # First, close popups and subscribe boxes that might interfere with reading
+        logger.info("Removing popups and subscribe boxes")
+        page.evaluate(
+            """() => {
+            // Function to remove popups and other overlay elements
+            const removePopups = () => {
+                // Common selectors for popups, modals, and overlays
+                const popupSelectors = [
+                    // Modal and popup containers
+                    '.modal, .popup, .overlay, .lightbox',
+                    '[class*="modal"], [class*="popup"], [class*="overlay"]',
+                    '[id*="modal"], [id*="popup"], [id*="overlay"]',
+                    
+                    // Newsletter and subscribe forms
+                    '.newsletter, .subscribe, .subscription',
+                    '[class*="newsletter"], [class*="subscribe"]',
+                    'form[class*="signup"], form[class*="sign-up"]',
+                    
+                    // Specific to Substack and similar platforms
+                    '.subscription-widget, .subscribe-widget, .paywall',
+                    '.subscribe-block, .subscription-prompt',
+                    
+                    // Cookie notices and GDPR/privacy consents
+                    '.cookie-banner, .cookie-notice, .consent-banner',
+                    '.gdpr, .gdpr-banner, .privacy-notice',
+                    '[class*="cookie"], [class*="consent"]',
+                    
+                    // Fixed position elements that might block content
+                    'div[class*="fixed"], div[style*="position: fixed"]',
+                    'aside[style*="position: fixed"]',
+                    
+                    // Exit intent and timed popups
+                    '.exit-intent, .timed-popup',
+                    
+                    // Social share overlays that cover content
+                    '.social-overlay, .share-overlay'
+                ];
+                
+                // Remove elements matching these selectors
+                popupSelectors.forEach(selector => {
+                    document.querySelectorAll(selector).forEach(el => {
+                        // Check if this is likely to be a popup/modal and not main content
+                        // We don't want to remove main content that happens to match our selectors
+                        const isFixedPosition = window.getComputedStyle(el).position === 'fixed';
+                        const hasHighZIndex = parseInt(window.getComputedStyle(el).zIndex) > 10;
+                        const isSmallElement = el.offsetWidth < window.innerWidth * 0.9;
+                        const hasOverlayBackground = window.getComputedStyle(el).backgroundColor.includes('rgba');
+                        
+                        if ((isFixedPosition || hasHighZIndex) && 
+                             (isSmallElement || hasOverlayBackground)) {
+                            try {
+                                // Try to find and click close buttons first
+                                const closeButtons = el.querySelectorAll(
+                                    'button[class*="close"], .close-button, .dismiss, ' +
+                                    '[class*="dismiss"], [aria-label="Close"], ' +
+                                    'button:only-child, .icon-close, ' + 
+                                    '[class*="close-icon"], button[class*="close"]'
+                                );
+                                
+                                let closed = false;
+                                closeButtons.forEach(btn => {
+                                    try {
+                                        btn.click();
+                                        closed = true;
+                                    } catch (e) {
+                                        // Ignore if click fails
+                                    }
+                                });
+                                
+                                // If clicking didn't work, remove the element
+                                if (!closed) {
+                                    el.remove();
+                                }
+                            } catch (e) {
+                                // If all else fails, just hide it
+                                el.style.display = 'none';
+                                el.style.visibility = 'hidden';
+                                el.style.opacity = '0';
+                            }
+                        }
+                    });
+                });
+                
+                // Remove any backdrop/overlay elements
+                document.querySelectorAll('.modal-backdrop, .overlay-backdrop, .popup-backdrop').forEach(el => {
+                    el.remove();
+                });
+                
+                // Fix body scroll if it was disabled by modals
+                document.body.style.overflow = 'auto';
+                document.body.style.position = 'static';
+                document.documentElement.style.overflow = 'auto';
+                
+                // Check for and accept any cookie consent buttons
+                const consentButtons = document.querySelectorAll(
+                    'button[class*="accept"], button[class*="agree"], ' +
+                    'button[class*="consent"], [class*="accept-button"], ' +
+                    'button:not([class*="reject"]):not([class*="decline"]):has-text("Accept"), ' +
+                    'button:not([class*="reject"]):not([class*="decline"]):has-text("Agree")'
+                );
+                
+                consentButtons.forEach(btn => {
+                    try {
+                        btn.click();
+                    } catch (e) {
+                        // Ignore click failures
+                    }
+                });
+            };
+            
+            // Run removal immediately and again after a delay
+            // (some sites load popups after initial page load)
+            removePopups();
+            setTimeout(removePopups, 500);
+        }"""
+        )
+        
+        # Short pause after popup removal
+        page.wait_for_timeout(600)
+        
+        # Now execute JavaScript to expand common interactive elements
         page.evaluate(
             """() => {
             // Function to expand elements
@@ -333,8 +454,34 @@ def _expand_hidden_elements(page: Page) -> None:
 
         # Final consistent delay to allow all expansions to complete
         page.wait_for_timeout(500)
+        
+        # One final pass to remove any popups that might have appeared due to our interactions
+        logger.info("Final check for popups after expanding content")
+        page.evaluate(
+            """() => {
+            // Simple removal of any remaining popups
+            const removeRemainingPopups = () => {
+                // Fixed position elements that might be popups
+                document.querySelectorAll('div[style*="position: fixed"], div[style*="z-index"]').forEach(el => {
+                    // Only remove if likely a popup (high z-index or overlay color)
+                    const zIndex = parseInt(window.getComputedStyle(el).zIndex);
+                    const hasBgColor = window.getComputedStyle(el).backgroundColor !== 'rgba(0, 0, 0, 0)';
+                    
+                    if (zIndex > 100 || hasBgColor) {
+                        el.remove();
+                    }
+                });
+                
+                // Remove body classes that might be preventing scroll
+                document.body.classList.remove('no-scroll', 'modal-open', 'overflow-hidden');
+                document.body.style.overflow = 'auto';
+            };
+            
+            removeRemainingPopups();
+        }"""
+        )
 
-        logger.info("Completed expansion of hidden elements")
+        logger.info("Completed expansion of hidden elements and popup removal")
 
     except Exception as e:
         logger.warning(f"Error while expanding hidden elements: {str(e)}")
@@ -354,22 +501,58 @@ def get_webpage_metadata(page: Page, url: str) -> Dict[str, Any]:
     """
     # Consistent delay before metadata extraction
     time.sleep(100 / 1000)
+    
+    # Initialize metadata with URL and access date which we know are available
     metadata = {
-        "title": page.title(),
         "url": url,
         "accessDate": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
-
-    # Extract the website domain for libraryCatalog field
-    parsed_url = urlparse(url)
-    domain = parsed_url.netloc
-    if domain.startswith("www."):
-        domain = domain[4:]  # Remove www. prefix if present
-    metadata["domain"] = domain
-
-    # Try to extract additional metadata
+    
+    # Safely get the page title with fallbacks
     try:
-        # Extract description or abstract if available
+        # First attempt: direct page.title() method
+        metadata["title"] = page.title()
+    except Exception as e:
+        logger.warning(f"Error getting title with page.title(): {str(e)}")
+        try:
+            # Second attempt: evaluate JavaScript to get title
+            metadata["title"] = page.evaluate("document.title")
+        except Exception as e:
+            logger.warning(f"Error getting title with JavaScript: {str(e)}")
+            try:
+                # Third attempt: try to get h1 or similar heading
+                metadata["title"] = page.evaluate("""
+                    () => {
+                        const h1 = document.querySelector('h1');
+                        if (h1) return h1.innerText;
+                        const h2 = document.querySelector('h2');
+                        if (h2) return h2.innerText;
+                        return 'Unknown Title';
+                    }
+                """)
+            except Exception as e:
+                logger.warning(f"Error getting title from headings: {str(e)}")
+                # Last resort: use domain or URL as title
+                parsed = urlparse(url)
+                metadata["title"] = parsed.netloc or "Unknown Title"
+
+    # Extract the website domain for libraryCatalog field in a separate try block
+    try:
+        parsed_url = urlparse(url)
+        domain = parsed_url.netloc
+        if domain.startswith("www."):
+            domain = domain[4:]  # Remove www. prefix if present
+        metadata["domain"] = domain
+    except Exception as e:
+        logger.warning(f"Error extracting domain metadata: {str(e)}")
+        metadata["domain"] = "unknown-domain"
+
+    # Try to extract additional metadata with better error handling
+    # Extract metadata fields one by one with individual try/except blocks
+    # so if one fails, others can still be attempted
+    
+    # Extract description
+    try:
         description = page.evaluate(
             """() => {
             const meta = document.querySelector('meta[name="description"]') || 
@@ -379,30 +562,64 @@ def get_webpage_metadata(page: Page, url: str) -> Dict[str, Any]:
         )
         if description:
             metadata["description"] = description
+    except Exception as e:
+        logger.warning(f"Error extracting description metadata: {str(e)}")
 
-        # Extract author if available
+    # Extract author
+    try:
         author = page.evaluate(
             """() => {
             const meta = document.querySelector('meta[name="author"]') || 
-                         document.querySelector('meta[property="article:author"]');
-            return meta ? meta.getAttribute('content') : '';
+                         document.querySelector('meta[property="article:author"]') ||
+                         document.querySelector('meta[name="twitter:creator"]');
+            if (meta) return meta.getAttribute('content');
+            
+            // Try looking for author in schema.org metadata
+            const jsonLd = document.querySelector('script[type="application/ld+json"]');
+            if (jsonLd) {
+                try {
+                    const data = JSON.parse(jsonLd.textContent);
+                    if (data.author) return typeof data.author === 'object' ? data.author.name : data.author;
+                } catch (e) {}
+            }
+            
+            // Try common author elements
+            const authorElement = document.querySelector('.author, .byline, [rel="author"]');
+            return authorElement ? authorElement.textContent.trim() : '';
         }"""
         )
         if author:
             metadata["author"] = author
+    except Exception as e:
+        logger.warning(f"Error extracting author metadata: {str(e)}")
 
-        # Extract publication date if available
+    # Extract publication date
+    try:
         pub_date = page.evaluate(
             """() => {
             const meta = document.querySelector('meta[name="publication_date"]') || 
-                         document.querySelector('meta[property="article:published_time"]');
-            return meta ? meta.getAttribute('content') : '';
+                         document.querySelector('meta[property="article:published_time"]') ||
+                         document.querySelector('meta[name="date"]');
+            if (meta) return meta.getAttribute('content');
+            
+            // Try looking for date in schema.org metadata
+            const jsonLd = document.querySelector('script[type="application/ld+json"]');
+            if (jsonLd) {
+                try {
+                    const data = JSON.parse(jsonLd.textContent);
+                    if (data.datePublished) return data.datePublished;
+                } catch (e) {}
+            }
+            
+            // Try common date elements
+            const dateElement = document.querySelector('.date, .published, time');
+            return dateElement ? (dateElement.getAttribute('datetime') || dateElement.textContent.trim()) : '';
         }"""
         )
         if pub_date:
             metadata["publicationDate"] = pub_date
     except Exception as e:
-        logger.warning(f"Error extracting additional metadata: {str(e)}")
+        logger.warning(f"Error extracting publication date metadata: {str(e)}")
 
     return metadata
 
