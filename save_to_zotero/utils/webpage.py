@@ -304,7 +304,117 @@ def _expand_hidden_elements(page: Page) -> None:
 
         # Consistent pause to allow expansions to complete
         page.wait_for_timeout(800)
-
+        
+        # Handle subscription popups, cookie consent dialogs, and overlay modals
+        logger.info("Removing subscription popups, cookie dialogs, and overlays")
+        page.evaluate(
+            """() => {
+            // Function to remove annoying overlays and popups
+            const removePopupsAndOverlays = () => {
+                // 1. Handle common overlay modals
+                const overlaySelectors = [
+                    // Gray/dark overlays that block content
+                    '.modal-backdrop', '.overlay', '.popup-overlay', '.modal-overlay',
+                    'div[class*="overlay"]', 'div[id*="overlay"]',
+                    'div[style*="opacity"][style*="background"]',
+                    // Elements with high z-index that might be overlays
+                    'div[style*="z-index: 999"]', 'div[style*="z-index: 9999"]',
+                    'div[style*="z-index: 10000"]', 'div[style*="z-index: 2147483647"]'
+                ];
+                
+                overlaySelectors.forEach(selector => {
+                    document.querySelectorAll(selector).forEach(el => {
+                        try {
+                            el.remove();
+                        } catch(e) {
+                            el.style.display = 'none';
+                            el.style.visibility = 'hidden';
+                            el.style.opacity = '0';
+                            el.style.zIndex = '-1';
+                        }
+                    });
+                });
+                
+                // 2. Handle subscription popups
+                const subscriptionSelectors = [
+                    // Common subscription popup containers
+                    '.subscription-popup', '.subscribe-popup', '.newsletter-popup',
+                    'div[class*="subscribe"]', 'div[id*="subscribe"]',
+                    'div[class*="newsletter"]', 'div[id*="newsletter"]',
+                    'div[class*="paywall"]', 'div[id*="paywall"]',
+                    // Modals and dialogs that might be subscription-related
+                    '.modal.show', '.modal:not(.fade)', '.modal[style*="display: block"]',
+                    'div[role="dialog"]', 'div[aria-modal="true"]',
+                    // Popups with words like subscribe in them
+                    'div:not([style*="display: none"]) > div:not([style*="display: none"]) h2:contains("Subscribe")',
+                    'div:not([style*="display: none"]) > div:not([style*="display: none"]) h3:contains("Subscribe")'
+                ];
+                
+                subscriptionSelectors.forEach(selector => {
+                    try {
+                        document.querySelectorAll(selector).forEach(el => {
+                            el.remove();
+                        });
+                    } catch(e) {
+                        // Some complex selectors might not be supported, ignore errors
+                    }
+                });
+                
+                // 3. Handle cookie consent dialogs
+                const cookieSelectors = [
+                    // Common cookie consent containers
+                    '.cookie-banner', '.cookie-dialog', '.cookie-consent',
+                    '.cookies-popup', '.gdpr-banner', '.consent-popup',
+                    'div[class*="cookie"]', 'div[id*="cookie"]', 
+                    'div[class*="gdpr"]', 'div[id*="gdpr"]',
+                    'div[class*="consent"]', 'div[id*="consent"]',
+                    // Look for accept buttons to click them first
+                    'button[id*="accept"]', 'button[class*="accept"]',
+                    'a[id*="accept"]', 'a[class*="accept"]'
+                ];
+                
+                // Try to click accept buttons first
+                const acceptButtons = document.querySelectorAll('button, a');
+                for (const button of acceptButtons) {
+                    const text = button.textContent.toLowerCase();
+                    if (text.includes('accept') || text.includes('agree') || 
+                        text.includes('got it') || text.includes('i understand') ||
+                        text.includes('okay') || text.includes('continue')) {
+                        try {
+                            button.click();
+                            // Short delay to let the click take effect
+                            return; // Exit to give the click a chance to work
+                        } catch(e) {
+                            // Ignore if click fails
+                        }
+                    }
+                }
+                
+                // Then try to remove cookie dialogs
+                cookieSelectors.forEach(selector => {
+                    document.querySelectorAll(selector).forEach(el => {
+                        try {
+                            el.remove();
+                        } catch(e) {
+                            el.style.display = 'none';
+                        }
+                    });
+                });
+                
+                // 4. Fix body scroll if it was locked
+                document.body.style.overflow = 'auto';
+                document.body.style.position = 'static';
+                document.documentElement.style.overflow = 'auto';
+            };
+            
+            // Run multiple times with delay to catch things that might reappear
+            removePopupsAndOverlays();
+            setTimeout(removePopupsAndOverlays, 400);
+        }"""
+        )
+        
+        page.wait_for_timeout(600)  # Wait for popup removal to finish
+        
         # Second pass with more specific selectors that might trigger UI updates
         logger.info("Performing secondary expansion of interactive elements")
         page.evaluate(
