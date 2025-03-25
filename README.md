@@ -74,16 +74,16 @@ Note: to launch save-to-zotero you have three possibilities:
 
 ```bash
 # Save a webpage to Zotero
-uvx save-to-zotero@latest --url="https://example.com/article"
+uvx save-to-zotero@latest "https://example.com/article"
 
 # Add an existing PDF file to Zotero
-uvx save-to-zotero@latest --pdf_path="/path/to/document.pdf"
+uvx save-to-zotero@latest "/path/to/document.pdf"
 
 # Add to a specific collection
-uvx save-to-zotero@latest --url="https://example.com/article" --collection_name="Research Papers"
+uvx save-to-zotero@latest "https://example.com/article" --collection_name="Research Papers"
 
 # Add tags to the item
-uvx save-to-zotero@latest --url="https://example.com/article" --tags="research,important,to-read"
+uvx save-to-zotero@latest "https://example.com/article" --tags="research,important,to-read"
 ```
 
 ### Advanced Options
@@ -91,7 +91,7 @@ uvx save-to-zotero@latest --url="https://example.com/article" --tags="research,i
 ```bash
 # Full options
 uvx save-to-zotero \
-  --url="https://example.com/article" \
+  "https://example.com/article" \
   --wait=8000 \
   --api_key="your_zotero_api_key" \
   --library_id="your_library_id" \
@@ -101,7 +101,7 @@ uvx save-to-zotero \
   --verbose=True
 
 # For pages with complex JavaScript content, increase wait time
-uvx save-to-zotero --url="https://complex-site.com/article" --wait=10000
+uvx save-to-zotero "https://complex-site.com/article" --wait=10000
 ```
 
 ### Environment Variables
@@ -150,7 +150,7 @@ export ZOTERO_BROWSER_USER_DATA_DIR="C:\\Users\\username\\AppData\\Local\\Google
 export ZOTERO_BROWSER_USER_DATA_DIR="/Users/username/Library/Application Support/Google/Chrome/Default"  # macOS example
 
 # Run the tool - it will use your existing browser cookies and run in visible mode
-uvx save-to-zotero@latest --url="https://example.com/login-required-page"
+uvx save-to-zotero@latest "https://example.com/login-required-page"
 ```
 
 ## Troubleshooting
