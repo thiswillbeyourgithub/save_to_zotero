@@ -86,6 +86,37 @@ uvx save-to-zotero@latest "https://example.com/article" --collection_name="Resea
 uvx save-to-zotero@latest "https://example.com/article" --tags="research,important,to-read"
 ```
 
+### Using as a Python Library
+
+You can also use `save_to_zotero` directly in your Python scripts:
+
+```python
+from save_to_zotero import SaveToZotero
+
+# Save a webpage to Zotero
+SaveToZotero("https://example.com/article", 
+             wait=5000, 
+             api_key="your_zotero_api_key",
+             library_id="your_library_id",
+             library_type="user",
+             collection_name="Research Papers",
+             tags="research,important")
+
+# Add an existing PDF file to Zotero
+SaveToZotero("/path/to/document.pdf",
+             api_key="your_zotero_api_key",
+             library_id="your_library_id",
+             library_type="user",
+             collection_name="Research Papers",
+             tags="research,important")
+
+# Using environment variables for authentication
+# (assumes ZOTERO_API_KEY, ZOTERO_LIBRARY_ID, etc. are set)
+SaveToZotero("https://example.com/article")
+```
+
+The class constructor accepts the same parameters as the command-line tool. The first positional argument must be either a URL or a path to a PDF file.
+
 ### Advanced Options
 
 ```bash
