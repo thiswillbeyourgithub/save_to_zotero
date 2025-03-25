@@ -43,8 +43,6 @@ class SaveToZotero:
 
     def __init__(
         self,
-        url: Optional[str] = None,
-        pdf_path: Optional[str] = None,
         wait: int = 5000,
         api_key: Optional[str] = None,
         library_id: Optional[str] = None,
@@ -55,11 +53,13 @@ class SaveToZotero:
         connector_port: Optional[int] = None,
         tags: str = "save_to_zotero",
         verbose: bool = False,
+        *arg,
     ):
         """
         Save a webpage as PDF and add it to Zotero, or add an existing PDF file.
 
         Args:
+            *arg: Only one positional argument is necessary and accepted: either the url to the webpage or the path to the pdf file.
             url: The URL of the webpage to save (optional if pdf_path is provided)
             pdf_path: Path to an existing PDF file to add (optional if url is provided)
             wait: Time to wait (ms) for the page to fully load (for URLs)
@@ -74,8 +74,23 @@ class SaveToZotero:
             verbose: Enable verbose logging
 
         """
-        if not url and not pdf_path:
-            raise ValueError("Either url or pdf_path must be provided")
+        assert arg, "A positional argumennt is necessary: either the path to the pdf or the url to the webpage"
+        assert len(arg) == 1, "Only 1 positional argument can be specified"
+        pdf_path = None
+        url = None
+        try:
+            if Path(arg).exists():
+                pdf_path = arg[0]
+            else:
+                url = arg[0]
+        except Exception:
+            url = arg[0]
+        if pdf_path:
+            logger.debug(f"Received pdf path as arg: {pdf_path}")
+        elif url:
+            logger.debug(f"Received url as arg: {url}")
+        else:
+            raise ValueError(arg)
 
         assert not (pdf_path and url), "Must supply a url or a pdf but not both"
 
