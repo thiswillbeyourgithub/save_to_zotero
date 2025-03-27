@@ -2,8 +2,12 @@
 Utility functions for common operations.
 """
 
-from typing import Optional
+from typing import Optional, List
 import sys
+import os
+import platform
+import subprocess
+import time
 import requests
 from pathlib import Path
 from loguru import logger
@@ -73,11 +77,54 @@ def configure_logger(
 configure_logger()
 
 
+def _get_zotero_paths() -> List[Path]:
+    """
+    Get possible paths to the Zotero executable based on the operating system.
+
+    Returns:
+        List of possible paths to the Zotero executable
+    """
+    system = platform.system()
+    paths = []
+
+    if system == "Windows":
+        # Common Windows installation paths
+        program_files = os.environ.get("ProgramFiles", r"C:\Program Files")
+        program_files_x86 = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
+        
+        paths = [
+            Path(program_files) / "Zotero" / "zotero.exe",
+            Path(program_files_x86) / "Zotero" / "zotero.exe",
+            # User might have installed in a different location
+            Path(os.environ.get("APPDATA", "")) / "Zotero" / "Zotero" / "zotero.exe",
+        ]
+    elif system == "Darwin":  # macOS
+        paths = [
+            Path("/Applications/Zotero.app/Contents/MacOS/zotero"),
+            Path(os.path.expanduser("~/Applications/Zotero.app/Contents/MacOS/zotero")),
+        ]
+    else:  # Linux
+        paths = [
+            Path("/usr/bin/zotero"),
+            Path("/usr/local/bin/zotero"),
+            Path(os.path.expanduser("~/.local/bin/zotero")),
+            Path("/opt/zotero/zotero"),
+        ]
+
+    # Add path from environment variable if it exists
+    zotero_path_env = os.environ.get("ZOTERO_PATH")
+    if zotero_path_env:
+        paths.insert(0, Path(zotero_path_env))
+
+    # Return only paths that exist
+    return [p for p in paths if p.exists()]
+
+
 def ensure_zotero_running(
     connector_host: str = "http://127.0.0.1", connector_port: int = 23119
 ) -> bool:
     """
-    Check if Zotero is running and raise an exception if not.
+    Check if Zotero is running and try to launch it if not.
 
     Args:
         connector_host: Zotero connector host address
@@ -87,24 +134,64 @@ def ensure_zotero_running(
         bool: True if Zotero is running
 
     Raises:
-        RuntimeError: If Zotero is not running
+        RuntimeError: If Zotero couldn't be started
     """
-    try:
-        # Try to contact the Zotero connector API
-        response = requests.post(
-            f"{connector_host}:{connector_port}/connector/ping", timeout=2
-        )
-        if response.status_code == 200:
-            logger.info("Zotero is already running")
-            return True
-    except requests.exceptions.RequestException:
+    def is_zotero_running():
+        try:
+            response = requests.get(
+                f"{connector_host}:{connector_port}/connector/ping", timeout=2
+            )
+            return response.status_code == 200
+        except requests.exceptions.RequestException:
+            return False
+
+    # First check if Zotero is already running
+    if is_zotero_running():
+        logger.info("Zotero is already running")
+        return True
+
+    # If not running, try to launch it
+    logger.info("Zotero is not running. Attempting to launch it...")
+    
+    zotero_paths = _get_zotero_paths()
+    
+    if not zotero_paths:
         error_msg = (
-            "Zotero is not running. Please start Zotero manually before continuing."
+            "Zotero executable not found. Please specify its location with ZOTERO_PATH "
+            "environment variable or start Zotero manually."
         )
         logger.error(error_msg)
         raise RuntimeError(error_msg)
-
-    return True
+    
+    # Try each possible path
+    for zotero_path in zotero_paths:
+        try:
+            logger.info(f"Attempting to launch Zotero from: {zotero_path}")
+            
+            # Launch Zotero and don't wait for it to exit
+            if platform.system() == "Windows":
+                subprocess.Popen([str(zotero_path)], creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+            else:
+                subprocess.Popen([str(zotero_path)], start_new_session=True)
+            
+            # Wait for Zotero to start (up to 20 seconds)
+            logger.info("Waiting for Zotero to start...")
+            for _ in range(20):
+                time.sleep(1)
+                if is_zotero_running():
+                    logger.info("Zotero started successfully")
+                    return True
+            
+            logger.warning(f"Zotero didn't start from {zotero_path} within timeout")
+        except Exception as e:
+            logger.warning(f"Failed to launch Zotero from {zotero_path}: {e}")
+    
+    # If we get here, we couldn't start Zotero
+    error_msg = (
+        "Could not launch Zotero automatically. Please start Zotero manually."
+    )
+    logger.error(error_msg)
+    raise RuntimeError(error_msg)
 
 
 def find_available_port(start_port: int = 25852, max_attempts: int = 100) -> int:
