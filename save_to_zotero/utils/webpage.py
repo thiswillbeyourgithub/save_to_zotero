@@ -67,7 +67,7 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
             # Use launch_persistent_context for user data directories
             context = p.chromium.launch_persistent_context(
                 user_data_dir=user_data_dir,
-                headless=False,  # Always visible when using user data dir
+                headless=True,
                 args=["--disable-blink-features=AutomationControlled"],
                 user_agent=user_agent,
                 viewport=viewport,
@@ -78,7 +78,7 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
             )
             browser = None  # No separate browser instance in this case
         else:
-            # Default to headless mode when no user data directory is specified
+            # Default to headless mode
             launch_args["headless"] = True
             browser = p.chromium.launch(**launch_args)
             
