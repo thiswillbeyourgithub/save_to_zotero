@@ -186,7 +186,7 @@ uvx save-to-zotero@latest "https://example.com/login-required-page"
 
 ## Troubleshooting
 
-- **Zotero Integration**: The tool requires the Zotero desktop application to be running. If Zotero is not already running, save_to_zotero will attempt to launch it automatically and retry the operation.
+- **Zotero Must Be Running**: The tool requires the Zotero desktop application to be running.
 - **PDF Generation Issues**: 
   - Increase the wait time for complex pages with the `--wait` parameter (default is 5000ms)
   - For pages with infinite scroll, consider capturing a specific section rather than the entire page
