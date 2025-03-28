@@ -443,7 +443,7 @@ class SaveToZotero:
 
         try:
             # Make the request to the Zotero connector
-            response = requests.post(connector_url, json=payload, timeout=30)
+            response = requests.post(connector_url, json=payload, timeout=600)
 
             assert response.status_code in [200, 201], response.status_code
             logger.info(
