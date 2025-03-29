@@ -212,6 +212,30 @@ class SaveToZotero:
                     for k, v in metadata.items()
                 ]
             )
+
+            # Also: if title of webpage contains "error" or "http" then the
+            # parsing probably fails, let's overload that title
+            pdf_title = metadata["title"]
+            webpage_title = webpage["data"]["title"]
+            if "error" in webpage_title.lower() and "error" not in pdf_title.lower():
+                logger.warnning(
+                    f"Detected 'error' in saved webpage title ('{webpage_title}'), replacing it with the pdf title ('{pdf_title}')"
+                )
+                webpage["data"]["title"] = pdf_title
+                webpage["data"][
+                    "extra"
+                ] += f"\noriginal_webpage_title: '{webpage_title}'"
+            elif webpage_title.startswith("http") and not pdf_title.lower().startswith(
+                "http"
+            ):
+                logger.warnning(
+                    f"Detected leading 'http' in saved webpage title ('{webpage_title}'), this might indicate parsing issue so replacing it with the pdf title ('{pdf_title}')"
+                )
+                webpage["data"]["title"] = pdf_title
+                webpage["data"][
+                    "extra"
+                ] += f"\noriginal_webpage_title: '{webpage_title}'"
+
             metadata_update = self.zot.update_item(webpage)
             logger.debug(f"Metadata update answer: {metadata_update}")
 
