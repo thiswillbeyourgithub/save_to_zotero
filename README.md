@@ -72,18 +72,28 @@ Note: to launch save-to-zotero you have three possibilities:
 2. `python -m save_to_zotero [args]`
 3. `save-to-zotero [args]`
 
+You can specify the URL or PDF file in two ways:
+- As a positional argument (first argument)
+- Using the `--url` or `--path` parameter
+
 ```bash
-# Save a webpage to Zotero
+# Save a webpage to Zotero (using positional argument)
 uvx save-to-zotero@latest "https://example.com/article"
 
-# Add an existing PDF file to Zotero
+# Save a webpage to Zotero (using --url parameter)
+uvx save-to-zotero@latest --url="https://example.com/article"
+
+# Add an existing PDF file to Zotero (using positional argument)
 uvx save-to-zotero@latest "/path/to/document.pdf"
+
+# Add an existing PDF file to Zotero (using --path parameter)
+uvx save-to-zotero@latest --path="/path/to/document.pdf"
 
 # Add to a specific collection
 uvx save-to-zotero@latest "https://example.com/article" --collection_name="Research Papers"
 
 # Add tags to the item
-uvx save-to-zotero@latest "https://example.com/article" --tags="research,important,to-read"
+uvx save-to-zotero@latest --url="https://example.com/article" --tags="research,important,to-read"
 ```
 
 ### Using as a Python Library
@@ -93,7 +103,7 @@ You can also use `save_to_zotero` directly in your Python scripts:
 ```python
 from save_to_zotero import SaveToZotero
 
-# Save a webpage to Zotero
+# Save a webpage to Zotero (using positional argument)
 SaveToZotero("https://example.com/article", 
              wait=5000, 
              api_key="your_zotero_api_key",
@@ -102,8 +112,25 @@ SaveToZotero("https://example.com/article",
              collection_name="Research Papers",
              tags="research,important")
 
-# Add an existing PDF file to Zotero
+# Save a webpage to Zotero (using url parameter)
+SaveToZotero(url="https://example.com/article", 
+             wait=5000, 
+             api_key="your_zotero_api_key",
+             library_id="your_library_id",
+             library_type="user",
+             collection_name="Research Papers",
+             tags="research,important")
+
+# Add an existing PDF file to Zotero (using positional argument)
 SaveToZotero("/path/to/document.pdf",
+             api_key="your_zotero_api_key",
+             library_id="your_library_id",
+             library_type="user",
+             collection_name="Research Papers",
+             tags="research,important")
+
+# Add an existing PDF file to Zotero (using path parameter)
+SaveToZotero(path="/path/to/document.pdf",
              api_key="your_zotero_api_key",
              library_id="your_library_id",
              library_type="user",
@@ -112,15 +139,15 @@ SaveToZotero("/path/to/document.pdf",
 
 # Using environment variables for authentication
 # (assumes ZOTERO_API_KEY, ZOTERO_LIBRARY_ID, etc. are set)
-SaveToZotero("https://example.com/article")
+SaveToZotero(url="https://example.com/article")
 ```
 
-The class constructor accepts the same parameters as the command-line tool. The first positional argument must be either a URL or a path to a PDF file.
+The class constructor accepts the same parameters as the command-line tool. You can specify a URL or path to a PDF file either as the first positional argument or using the `url` or `path` named parameters.
 
 ### Advanced Options
 
 ```bash
-# Full options
+# Full options using positional argument
 uvx save-to-zotero \
   "https://example.com/article" \
   --wait=8000 \
@@ -131,8 +158,19 @@ uvx save-to-zotero \
   --tags="research,important" \
   --verbose=True
 
+# Full options using named parameter
+uvx save-to-zotero \
+  --url="https://example.com/article" \
+  --wait=8000 \
+  --api_key="your_zotero_api_key" \
+  --library_id="your_library_id" \
+  --library_type="user" \
+  --collection_name="Research Papers" \
+  --tags="research,important" \
+  --verbose=True
+
 # For pages with complex JavaScript content, increase wait time
-uvx save-to-zotero "https://complex-site.com/article" --wait=10000
+uvx save-to-zotero --url="https://complex-site.com/article" --wait=10000
 ```
 
 ### Environment Variables
