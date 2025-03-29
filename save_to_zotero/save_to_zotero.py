@@ -2,6 +2,7 @@
 Script to save webpages as PDFs and add them to Zotero.
 Uses playwright for PDF generation and pyzotero for Zotero integration.
 """
+
 import json
 import os
 import tempfile
@@ -74,7 +75,9 @@ class SaveToZotero:
             verbose: Enable verbose logging
 
         """
-        assert arg, "A positional argumennt is necessary: either the path to the pdf or the url to the webpage"
+        assert (
+            arg
+        ), "A positional argumennt is necessary: either the path to the pdf or the url to the webpage"
         assert len(arg) == 1, "Only 1 positional argument can be specified"
         pdf_path = None
         url = None
@@ -207,10 +210,7 @@ class SaveToZotero:
             webpage = self.zot.item(webpage_key)
             metadata["save_to_zotero_version"] = self.VERSION
             webpage["data"]["extra"] = "\n".join(
-                [
-                    f"{k}: {v}"
-                    for k, v in metadata.items()
-                ]
+                [f"{k}: {v}" for k, v in metadata.items()]
             )
 
             # Also: if title of webpage contains "error" or "http" then the
@@ -240,8 +240,9 @@ class SaveToZotero:
             logger.debug(f"Metadata update answer: {metadata_update}")
 
             assert metadata_update, (
-                        "Error when updating metadata of webpage "
-                        f"to '{webpage['data']['extra']}'")
+                "Error when updating metadata of webpage "
+                f"to '{webpage['data']['extra']}'"
+            )
 
             # Update its URL to not be localhost
             logger.info("Waiting 10s for item to be available for update...")
