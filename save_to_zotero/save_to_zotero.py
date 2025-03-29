@@ -222,7 +222,7 @@ class SaveToZotero:
             pdf_title = metadata["title"]
             webpage_title = webpage["data"]["title"]
             if "error" in webpage_title.lower() and "error" not in pdf_title.lower():
-                logger.warnning(
+                logger.warning(
                     f"Detected 'error' in saved webpage title ('{webpage_title}'), replacing it with the pdf title ('{pdf_title}')"
                 )
                 webpage["data"]["title"] = pdf_title
@@ -232,7 +232,7 @@ class SaveToZotero:
             elif webpage_title.startswith("http") and not pdf_title.lower().startswith(
                 "http"
             ):
-                logger.warnning(
+                logger.warning(
                     f"Detected leading 'http' in saved webpage title ('{webpage_title}'), this might indicate parsing issue so replacing it with the pdf title ('{pdf_title}')"
                 )
                 webpage["data"]["title"] = pdf_title
