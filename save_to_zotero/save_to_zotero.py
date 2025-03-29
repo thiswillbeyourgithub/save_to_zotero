@@ -8,7 +8,7 @@ import os
 import tempfile
 import time
 from datetime import datetime
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Union
 import requests
 import shutil
 from pyzotero import zotero
@@ -44,6 +44,8 @@ class SaveToZotero:
 
     def __init__(
         self,
+        url: str = None,
+        pdf: Union[Path, str] = None,
         wait: int = 5000,
         api_key: Optional[str] = None,
         library_id: Optional[str] = None,
@@ -60,9 +62,8 @@ class SaveToZotero:
         Save a webpage as PDF and add it to Zotero, or add an existing PDF file.
 
         Args:
-            *arg: Only one positional argument is necessary and accepted: either the url to the webpage or the path to the pdf file.
-            url: The URL of the webpage to save (optional if pdf_path is provided)
-            pdf_path: Path to an existing PDF file to add (optional if url is provided)
+            url: str of url to save. If missing, will infer if *arg is a url or path
+            pdf: str or path of pdf to save. If missing, will infer if *arg is a url or path
             wait: Time to wait (ms) for the page to fully load (for URLs)
             api_key: Zotero API key (defaults to ZOTERO_API_KEY environment variable if not provided)
             library_id: Zotero library ID (defaults to ZOTERO_LIBRARY_ID environment variable if not provided)
@@ -73,29 +74,32 @@ class SaveToZotero:
             connector_port: Zotero connector port (defaults to ZOTERO_CONNECTOR_PORT environment variable or 23119)
             tags: Comma-separated list of tags to add to the item (defaults to "save_to_zotero")
             verbose: Enable verbose logging
+            *arg: If present, url and path must not be set: either the url to the webpage or the path to the pdf file.
 
         """
-        assert (
-            arg
-        ), "A positional argumennt is necessary: either the path to the pdf or the url to the webpage"
-        assert len(arg) == 1, "Only 1 positional argument can be specified"
-        pdf_path = None
-        url = None
-        try:
-            if Path(arg).exists():
-                pdf_path = arg[0]
-            else:
-                url = arg[0]
-        except Exception:
-            url = arg[0]
-        if pdf_path:
-            logger.debug(f"Received pdf path as arg: {pdf_path}")
+        assert pdf or url or arg, "You must supply either `pdf` or `url` or a unique positional argument"
+        assert sum((bool(pdf), bool(url), bool(arg))) == 1, "You can only specify either `pdf` or `url` or a positional argument"
+        if arg:
+            assert len(arg) == 1, f"If using positional argument, only 1 can be specified, received {len(arg)}"
+            arg = list(arg)
+            try:
+                if Path(arg).exists():
+                    pdf = arg.pop()
+                    logger.debug(f"Received pdf path as positional arg: {pdf}")
+                else:
+                    url = arg.pop()
+                    logger.debug(f"Received url as positional arg: {pdf}")
+            except Exception:
+                url = arg.pop()
+                logger.debug(f"Received url as positional arg: {pdf}")
+        elif pdf:
+            logger.debug(f"Received pdf path as arg: {pdf}")
         elif url:
             logger.debug(f"Received url as arg: {url}")
         else:
-            raise ValueError(arg)
+            raise Exception("Issue with argument parsing")
 
-        assert not (pdf_path and url), "Must supply a url or a pdf but not both"
+        assert sum((bool(pdf), bool(url), bool(arg))) == 1, "You can only specify either `pdf` or `url` or a positional argument"
 
         # Connector host/port config with env var fallbacks
         self.connector_host = connector_host or os.environ.get(
@@ -114,7 +118,7 @@ class SaveToZotero:
         # No environment fallback for collection - only use collection_name
 
         self.url = url
-        self.pdf_path = Path(pdf_path) if pdf_path else None
+        self.pdf_path = Path(pdf) if pdf else None
         self.wait = wait
         # Create a temporary directory instead of using a fixed storage dir
         self.temp_dir = tempfile.TemporaryDirectory()
