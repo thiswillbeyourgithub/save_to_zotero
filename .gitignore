@@ -1,5 +1,6 @@
 .aider*
 .env
+.env.leave
 reference
 __pycache__
 **.egg-info
