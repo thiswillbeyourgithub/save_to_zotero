@@ -278,8 +278,7 @@ def _expand_hidden_elements(page: Page) -> None:
             const expandElements = () => {
                 // 1. Click on common dropdown/accordion triggers - only those that won't navigate
                 const clickSelectors = [
-                    // Common accordion/dropdown triggers
-                    'details:not([open])',
+                    // Common accordion/dropdown triggers (excluding details elements)
                     '.accordion:not(.active), .accordion:not(.show)',
                     '.collapse-trigger, .expand-trigger',
                     '[aria-expanded="false"]',
@@ -318,12 +317,7 @@ def _expand_hidden_elements(page: Page) -> None:
                 });
                 
                 // 2. Force-expand elements by setting attributes and styles
-                // Force open details elements
-                document.querySelectorAll('details').forEach(el => {
-                    el.setAttribute('open', 'true');
-                });
-                
-                // Show collapsed/hidden elements
+                // Show collapsed/hidden elements (excluding details elements)
                 const showSelectors = [
                     '.collapse:not(.show)',
                     '.accordion-content', 
