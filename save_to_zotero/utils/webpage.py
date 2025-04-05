@@ -207,21 +207,69 @@ def _simulate_scrolling(page: Page) -> None:
 def _expand_hidden_elements(page: Page) -> None:
     """
     Expand dropdowns, accordions, and other hidden content to ensure
-    all text is visible in the PDF.
+    all text is visible in the PDF without navigating away from the current page.
 
     Args:
         page: The Playwright page object
     """
     try:
+        # Store the current URL to check against later
+        current_url = page.url
+        logger.info(f"Current URL before expansion: {current_url}")
+        
         # Consistent small delay before expanding elements
         time.sleep(200 / 1000)
 
-        # Execute JavaScript to expand common interactive elements
+        # Execute JavaScript to expand common interactive elements without causing navigation
         page.evaluate(
-            """() => {
+            """(currentUrl) => {
+            // Function to check if an element is likely to cause navigation
+            const wouldCauseNavigation = (element) => {
+                // Check for links with external hrefs
+                if (element.tagName === 'A') {
+                    const href = element.getAttribute('href');
+                    // Skip if it's an external link, absolute path, or not a fragment/hash link
+                    if (href && 
+                        href !== '#' && 
+                        !href.startsWith('#') && 
+                        !href.startsWith('javascript:') &&
+                        !element.getAttribute('role')) {
+                        return true;
+                    }
+                    
+                    // Check if it has target="_blank" which opens in new tab/window
+                    if (element.getAttribute('target') === '_blank') {
+                        return true;
+                    }
+                }
+                
+                // Check for buttons or other elements with onclick that might navigate
+                if (element.hasAttribute('onclick')) {
+                    const onclickValue = element.getAttribute('onclick');
+                    if (onclickValue.includes('location.href') || 
+                        onclickValue.includes('window.location') || 
+                        onclickValue.includes('navigate')) {
+                        return true;
+                    }
+                }
+                
+                // Check for typical navigation classes or IDs
+                const elementClasses = element.className.toLowerCase();
+                const elementId = (element.id || '').toLowerCase();
+                const navigationTerms = ['nav-link', 'navbar', 'menu-item', 'pagination'];
+                
+                for (const term of navigationTerms) {
+                    if (elementClasses.includes(term) || elementId.includes(term)) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            };
+            
             // Function to expand elements
             const expandElements = () => {
-                // 1. Click on common dropdown/accordion triggers
+                // 1. Click on common dropdown/accordion triggers - only those that won't navigate
                 const clickSelectors = [
                     // Common accordion/dropdown triggers
                     'details:not([open])',
@@ -237,11 +285,25 @@ def _expand_hidden_elements(page: Page) -> None:
                     '.tab:not(.active)'
                 ];
                 
-                // Process each type of clickable element
+                // Process each type of clickable element, checking if it would cause navigation
                 clickSelectors.forEach(selector => {
                     document.querySelectorAll(selector).forEach(el => {
                         try {
-                            el.click();
+                            // Only click if element won't cause navigation
+                            if (!wouldCauseNavigation(el)) {
+                                // Store url before click
+                                const beforeUrl = window.location.href;
+                                
+                                // Click the element
+                                el.click();
+                                
+                                // Check if URL changed (navigation occurred)
+                                if (window.location.href !== beforeUrl) {
+                                    console.warn('Navigation detected, attempting to go back');
+                                    // Try to restore previous URL
+                                    history.pushState(null, '', beforeUrl);
+                                }
+                            }
                         } catch (e) {
                             // Ignore errors if element can't be clicked
                         }
@@ -415,36 +477,82 @@ def _expand_hidden_elements(page: Page) -> None:
         
         page.wait_for_timeout(600)  # Wait for popup removal to finish
         
+        # Check if the page URL has changed after removing popups
+        if page.url != current_url:
+            logger.warning(f"URL changed to {page.url} after popup removal, attempting to navigate back")
+            page.goto(current_url, wait_until="networkidle", timeout=30000)
+        
         # Second pass with more specific selectors that might trigger UI updates
         logger.info("Performing secondary expansion of interactive elements")
         page.evaluate(
-            """() => {
+            """(currentUrl) => {
+            // Helper to check if element would cause navigation
+            const wouldCauseNavigation = (element) => {
+                // For links, check href
+                if (element.tagName === 'A') {
+                    const href = element.getAttribute('href');
+                    if (href && 
+                        href !== '#' && 
+                        !href.startsWith('#') && 
+                        !href.startsWith('javascript:')) {
+                        return true;
+                    }
+                }
+                
+                // Check for onClick handlers that might navigate
+                if (element.hasAttribute('onclick')) {
+                    const onClick = element.getAttribute('onclick');
+                    if (onClick.includes('location') || onClick.includes('href')) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            };
+            
             // Find elements with "show more" or similar text
             const textExpandButtons = Array.from(document.querySelectorAll('button, a, span, div'))
                 .filter(el => {
-                    const text = el.textContent.toLowerCase();
-                    return text.includes('show more') || 
+                    const text = (el.textContent || '').toLowerCase();
+                    return (text.includes('show more') || 
                            text.includes('read more') || 
                            text.includes('expand') ||
                            text.includes('view more') ||
-                           text.includes('see all');
+                           text.includes('see all')) && 
+                           !wouldCauseNavigation(el);
                 });
                 
-            // Click these text-based expansion elements
+            // Click these text-based expansion elements safely
             textExpandButtons.forEach(el => {
                 try {
+                    // Remember URL before click
+                    const beforeUrl = window.location.href;
+                    
+                    // Click the element
                     el.click();
+                    
+                    // Check if URL changed
+                    if (window.location.href !== beforeUrl) {
+                        console.warn('Navigation detected, reverting');
+                        history.pushState(null, '', beforeUrl);
+                    }
                 } catch (e) {
                     // Ignore errors
                 }
             });
-        }"""
-        )
+        }""", current_url)
 
         # Final consistent delay to allow all expansions to complete
         page.wait_for_timeout(500)
-
-        logger.info("Completed expansion of hidden elements")
+        
+        # Final check to ensure we're still on the original page
+        if page.url != current_url:
+            logger.warning(f"URL changed to {page.url} after expansion, navigating back to original")
+            page.goto(current_url, wait_until="networkidle", timeout=30000)
+            # Wait again after returning to original page
+            page.wait_for_timeout(800)
+        
+        logger.info("Completed expansion of hidden elements, still on original URL")
 
     except Exception as e:
         logger.warning(f"Error while expanding hidden elements: {str(e)}")
