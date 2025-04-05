@@ -19,7 +19,7 @@ from .misc import configure_logger
 logger = configure_logger(__name__)
 
 
-def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -> dict:
+def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000, verbose: bool = False) -> dict:
     """
     Save a webpage as a PDF using Playwright with human-like behavior.
 
@@ -27,6 +27,7 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
         url: The URL of the webpage to save
         output_path: The path where the PDF will be saved
         wait_for_load: Base time to wait in ms for page to fully load (will be randomized)
+        verbose: Whether to run in verbose mode (also sets headless to False)
 
     Returns:
         The metadata of the page
@@ -45,8 +46,10 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
     # Get user agent from environment variable or choose randomly
     user_agent = os.environ.get("ZOTERO_USER_AGENT", random.choice(user_agents))
     
-    # Determine headless mode from environment variable (default to True)
-    headless_mode = os.environ.get("SAVE_TO_ZOTERO_HEADLESS", "true").lower() != "false"
+    # Determine headless mode from environment variable (default to True) or verbose flag
+    # If verbose is True, set headless_mode to False to see the browser UI
+    env_headless = os.environ.get("SAVE_TO_ZOTERO_HEADLESS", "true").lower() != "false"
+    headless_mode = env_headless and not verbose
     logger.info(f"Browser headless mode: {headless_mode}")
 
     viewport = {"width": 1280, "height": 900}  # Standard readable size

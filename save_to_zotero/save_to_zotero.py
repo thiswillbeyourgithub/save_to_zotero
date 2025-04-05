@@ -515,7 +515,7 @@ class SaveToZotero:
 
         if self.url:
             # Save the webpage as PDF
-            metadata = save_webpage_as_pdf(self.url, str(pdf_path), self.wait)
+            metadata = save_webpage_as_pdf(self.url, str(pdf_path), self.wait, self.verbose)
             # Rename with better title
             title = metadata["title"]
             sanitized_title = "".join(

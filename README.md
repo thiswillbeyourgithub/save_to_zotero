@@ -210,6 +210,8 @@ By default, save_to_zotero runs in headless mode (invisible browser) for PDF gen
   export SAVE_TO_ZOTERO_HEADLESS="false"
   ```
 
+- **Use the `--verbose` argument**: this will disable the headless mode.
+
 - **Use Existing Browser Cookies**: Set the `ZOTERO_BROWSER_USER_DATA_DIR` environment variable to your browser's user data directory to utilize cookies already stored in your browser for sites that require login
 
 ⚠️ **Important Warning**: When using a browser user data directory, avoid using the same browser profile simultaneously while save_to_zotero is running, as this could cause conflicts and potentially corrupt your browser profile
