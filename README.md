@@ -187,6 +187,7 @@ export ZOTERO_CONNECTOR_HOST="http://127.0.0.1"  # Default connector host
 export ZOTERO_CONNECTOR_PORT="23119"  # Default connector port
 export ZOTERO_USER_AGENT="your_custom_user_agent"  # Optional
 export ZOTERO_BROWSER_USER_DATA_DIR="/path/to/user/data/dir"  # Optional: for persistent cookies/login sessions
+export SAVE_TO_ZOTERO_HEADLESS="false"  # Optional: set to "false" to run browser in visible mode
 ```
 
 ## Configuration
@@ -202,7 +203,14 @@ These can be configured using environment variables if needed.
 
 ### Browser Configuration
 
-By default, save_to_zotero runs in headless mode (invisible browser) for PDF generation. However, you can **use Existing Browser Cookies**: Set the `ZOTERO_BROWSER_USER_DATA_DIR` environment variable to your browser's user data directory to utilize cookies already stored in your browser for sites that require login
+By default, save_to_zotero runs in headless mode (invisible browser) for PDF generation. You can:
+
+- **Control Headless Mode**: Set the `SAVE_TO_ZOTERO_HEADLESS` environment variable to "false" to run the browser in visible mode (useful for debugging):
+  ```bash
+  export SAVE_TO_ZOTERO_HEADLESS="false"
+  ```
+
+- **Use Existing Browser Cookies**: Set the `ZOTERO_BROWSER_USER_DATA_DIR` environment variable to your browser's user data directory to utilize cookies already stored in your browser for sites that require login
 
 ⚠️ **Important Warning**: When using a browser user data directory, avoid using the same browser profile simultaneously while save_to_zotero is running, as this could cause conflicts and potentially corrupt your browser profile
 
