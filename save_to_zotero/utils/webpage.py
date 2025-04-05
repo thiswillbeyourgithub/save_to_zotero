@@ -44,6 +44,10 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
 
     # Get user agent from environment variable or choose randomly
     user_agent = os.environ.get("ZOTERO_USER_AGENT", random.choice(user_agents))
+    
+    # Determine headless mode from environment variable (default to True)
+    headless_mode = os.environ.get("SAVE_TO_ZOTERO_HEADLESS", "true").lower() != "false"
+    logger.info(f"Browser headless mode: {headless_mode}")
 
     viewport = {"width": 1280, "height": 900}  # Standard readable size
     device_scale_factor = 1.5  # Good balance for text clarity
@@ -62,12 +66,12 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
         
         if user_data_dir:
             logger.info(f"Using browser user data directory: {user_data_dir}")
-            logger.info("Running browser in visible mode with user data directory")
+            logger.info(f"Running browser with user data directory (headless: {headless_mode})")
             
             # Use launch_persistent_context for user data directories
             context = p.chromium.launch_persistent_context(
                 user_data_dir=user_data_dir,
-                headless=True,
+                headless=headless_mode,
                 args=["--disable-blink-features=AutomationControlled"],
                 user_agent=user_agent,
                 viewport=viewport,
@@ -78,8 +82,8 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000) -
             )
             browser = None  # No separate browser instance in this case
         else:
-            # Default to headless mode
-            launch_args["headless"] = True
+            # Set headless mode based on environment variable
+            launch_args["headless"] = headless_mode
             browser = p.chromium.launch(**launch_args)
             
             # Create context with optimal reading settings for all devices
