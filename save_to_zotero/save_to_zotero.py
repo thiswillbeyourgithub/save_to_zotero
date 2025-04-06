@@ -533,7 +533,7 @@ class SaveToZotero:
                     assert False, error_msg
             
             logger.info(
-                f"Snapshot saved successfully (status code: {response.status_code})"
+                f"Done saving snapshot (status code: {response.status_code})"
             )
             logger.debug(f"Snapshot response: {response.text}")
 
