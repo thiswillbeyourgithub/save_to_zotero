@@ -171,6 +171,9 @@ uvx save-to-zotero \
 
 # For pages with complex JavaScript content, increase wait time
 uvx save-to-zotero --url="https://complex-site.com/article" --wait=10000
+
+# Continue execution even if HTTP requests fail with unexpected status codes
+uvx save-to-zotero --url="https://example.com/article" --keep-going=True
 ```
 
 ### Environment Variables
@@ -241,6 +244,9 @@ uvx save-to-zotero@latest "https://example.com/login-required-page"
 - **Connector Issues**: 
   - Ensure Zotero is running before executing the command
   - Check if Zotero is using a non-standard port (can be verified in Zotero's Advanced preferences)
+- **HTTP Errors or Connectivity Issues**:
+  - Use the `--keep-going` flag to continue execution even when encountering HTTP errors
+  - Error details will be stored in the item's metadata for later reference
 - **Login-Required Pages**:
   - For pages that require login, set the `ZOTERO_BROWSER_USER_DATA_DIR` environment variable to point to your existing browser profile to use already stored cookies
   - Ensure you close the browser or don't use the same profile while save_to_zotero is running
