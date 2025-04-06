@@ -277,6 +277,7 @@ def _expand_hidden_elements(page: Page) -> None:
             // Function to expand elements
             const expandElements = () => {
                 // 1. Click on common dropdown/accordion triggers - only those that won't navigate
+                // IMPORTANT: details elements are deliberately excluded to preserve their collapsed state
                 const clickSelectors = [
                     // Common accordion/dropdown triggers (excluding details elements)
                     '.accordion:not(.active), .accordion:not(.show)',
@@ -317,7 +318,7 @@ def _expand_hidden_elements(page: Page) -> None:
                 });
                 
                 // 2. Force-expand elements by setting attributes and styles
-                // Show collapsed/hidden elements (excluding details elements)
+                // IMPORTANT: details elements are deliberately excluded to preserve their collapsed state
                 const showSelectors = [
                     '.collapse:not(.show)',
                     '.accordion-content', 
@@ -325,6 +326,13 @@ def _expand_hidden_elements(page: Page) -> None:
                     '.hidden-content',
                     '[aria-hidden="true"]'
                 ];
+                
+                // Explicitly preserve the state of details elements
+                // This ensures they won't be modified by any subsequent code
+                document.querySelectorAll('details').forEach(el => {
+                    // Mark details elements to prevent later manipulation
+                    el.dataset.preserveState = 'true';
+                });
                 
                 showSelectors.forEach(selector => {
                     document.querySelectorAll(selector).forEach(el => {
@@ -344,8 +352,13 @@ def _expand_hidden_elements(page: Page) -> None:
                     });
                 });
                 
-                // 3. Expand truncated text
+                // 3. Expand truncated text (except within details elements)
                 document.querySelectorAll('.truncated, .clamp, .line-clamp').forEach(el => {
+                    // Skip if this element is inside a details tag
+                    if (el.closest('details')) {
+                        return;
+                    }
+                
                     el.style.maxHeight = 'none';
                     el.style.webkitLineClamp = 'unset';
                     el.style.display = 'block';
