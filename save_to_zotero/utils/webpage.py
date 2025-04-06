@@ -277,9 +277,9 @@ def _expand_hidden_elements(page: Page) -> None:
             // Function to expand elements
             const expandElements = () => {
                 // 1. Click on common dropdown/accordion triggers - only those that won't navigate
-                // IMPORTANT: details elements are deliberately excluded to preserve their collapsed state
                 const clickSelectors = [
-                    // Common accordion/dropdown triggers (excluding details elements)
+                    // Common accordion/dropdown triggers
+                    'details:not([open])',  // Include details elements to expand them
                     '.accordion:not(.active), .accordion:not(.show)',
                     '.collapse-trigger, .expand-trigger',
                     '[aria-expanded="false"]',
@@ -318,7 +318,7 @@ def _expand_hidden_elements(page: Page) -> None:
                 });
                 
                 // 2. Force-expand elements by setting attributes and styles
-                // IMPORTANT: details elements are deliberately excluded to preserve their collapsed state
+                // Explicitly open all details elements to make their content visible in PDF
                 const showSelectors = [
                     '.collapse:not(.show)',
                     '.accordion-content', 
@@ -327,11 +327,9 @@ def _expand_hidden_elements(page: Page) -> None:
                     '[aria-hidden="true"]'
                 ];
                 
-                // Explicitly preserve the state of details elements
-                // This ensures they won't be modified by any subsequent code
+                // Explicitly open all details elements to ensure content is visible in PDF
                 document.querySelectorAll('details').forEach(el => {
-                    // Mark details elements to prevent later manipulation
-                    el.dataset.preserveState = 'true';
+                    el.setAttribute('open', 'true');
                 });
                 
                 showSelectors.forEach(selector => {
@@ -352,13 +350,8 @@ def _expand_hidden_elements(page: Page) -> None:
                     });
                 });
                 
-                // 3. Expand truncated text (except within details elements)
+                // 3. Expand truncated text
                 document.querySelectorAll('.truncated, .clamp, .line-clamp').forEach(el => {
-                    // Skip if this element is inside a details tag
-                    if (el.closest('details')) {
-                        return;
-                    }
-                
                     el.style.maxHeight = 'none';
                     el.style.webkitLineClamp = 'unset';
                     el.style.display = 'block';
