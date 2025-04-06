@@ -187,25 +187,29 @@ def _simulate_scrolling(page: Page) -> None:
     try:
         # Get page height
         height = page.evaluate("document.body.scrollHeight")
-
-        # Use a systematic approach to scroll the entire page
         viewport_height = page.viewport_size["height"]
-
-        # Calculate number of scrolls needed to cover the entire page
-        num_scrolls = max(3, int(height / viewport_height) + 1)
-
+        
+        # Calculate number of scrolls with overlap
+        num_scrolls = max(3, int(height / (viewport_height * 0.8)) + 1)
+        
+        logger.info(f"Scrolling through page with {num_scrolls} steps")
+        
         for i in range(num_scrolls):
-            # Scroll to specific positions to ensure complete page coverage
-            scroll_to = min(
-                i * (viewport_height * 0.8), height
-            )  # 80% overlap for better content capture
-
-            # Execute the scroll with smooth behavior
+            # Calculate scroll position with 20% overlap between scrolls
+            scroll_to = min(i * (viewport_height * 0.8), height)
+            
+            # Scroll with smooth behavior
             page.evaluate(f"window.scrollTo({{top: {scroll_to}, behavior: 'smooth'}})")
-
-            # Consistent pause between scrolls
-            page.wait_for_timeout(800)
-
+            
+            # Pause to let content load
+            page.wait_for_timeout(600)
+            
+            # Slight jitter in scroll position to trigger lazy-loading
+            if i > 0 and i < num_scrolls - 1:
+                jitter = random.randint(-30, 30)
+                page.evaluate(f"window.scrollBy(0, {jitter})")
+                page.wait_for_timeout(200)
+                
     except Exception as e:
         logger.warning(f"Error during scrolling simulation: {str(e)}")
         # Continue if scrolling fails - this is non-critical
@@ -215,9 +219,6 @@ def _expand_hidden_elements(page: Page) -> None:
     """
     Expand dropdowns, accordions, and other hidden content to ensure
     all text is visible in the PDF without navigating away from the current page.
-    
-    Leverages accessibility features to expose content that may be hidden
-    but accessible to screen readers.
 
     Args:
         page: The Playwright page object
@@ -227,258 +228,52 @@ def _expand_hidden_elements(page: Page) -> None:
         current_url = page.url
         logger.info(f"Current URL before expansion: {current_url}")
         
-        # Enable accessibility features to better expose hidden content
-        logger.info("Enabling accessibility mode to expose hidden content")
+        # First pass: Basic content expansion with minimal risk of navigation
+        logger.info("Expanding standard content elements")
         page.evaluate("""() => {
-            // Add attribute to document to indicate we want all content exposed
-            document.documentElement.setAttribute('data-force-accessibility', 'true');
-            
-            // Some sites check for screen readers - let's pretend to be one
-            // These are common properties checked to detect screen readers
-            Object.defineProperty(window, 'speechSynthesis', {
-                value: { speak: function() {} },
-                configurable: true
-            });
-            
-            // Mimic some common screen reader detection flags
-            if (!window.hasOwnProperty('onvoiceschanged')) {
-                Object.defineProperty(window, 'onvoiceschanged', {
-                    value: function() {},
-                    configurable: true
-                });
-            }
-        }""")
-        
-        # Consistent small delay before expanding elements
-        time.sleep(200 / 1000)
-
-        # First, process accessibility-specific elements to expose content for screen readers
-        logger.info("Processing accessibility attributes to expose hidden content")
-        page.evaluate("""() => {
-            // Function to expose content hidden via ARIA attributes
-            const exposeAccessibleContent = () => {
-                // 1. Make all aria-hidden="true" elements visible
-                document.querySelectorAll('[aria-hidden="true"]').forEach(el => {
-                    el.setAttribute('aria-hidden', 'false');
+            // Basic content visibility function
+            const showHiddenContent = () => {
+                // 1. Open all details elements
+                document.querySelectorAll('details').forEach(el => {
+                    el.setAttribute('open', 'true');
+                    el.open = true;
                     el.style.display = 'block';
-                    el.style.visibility = 'visible';
-                });
-                
-                // 2. Expand all elements with aria-expanded="false"
-                document.querySelectorAll('[aria-expanded="false"]').forEach(el => {
-                    el.setAttribute('aria-expanded', 'true');
                     
-                    // Find the controlled element if specified
-                    const controlsId = el.getAttribute('aria-controls');
-                    if (controlsId) {
-                        const controlledEl = document.getElementById(controlsId);
-                        if (controlledEl) {
-                            controlledEl.style.display = 'block';
-                            controlledEl.style.visibility = 'visible';
-                            controlledEl.setAttribute('aria-hidden', 'false');
-                        }
-                    }
-                });
-                
-                // 3. Show elements that might be conditionally displayed for screen readers
-                document.querySelectorAll('.sr-only, .screen-reader-text, .visually-hidden, .visually-hidden-focusable').forEach(el => {
-                    // Remove special positioning that hides from sighted users but keeps for screen readers
-                    el.style.position = 'static';
-                    el.style.width = 'auto';
-                    el.style.height = 'auto';
-                    el.style.overflow = 'visible';
-                    el.style.clip = 'auto';
-                    el.style.clipPath = 'none';
-                    el.style.whiteSpace = 'normal';
-                    el.style.margin = '1em 0';  // Add some spacing
-                    
-                    // Add visual indication this was screen-reader only content
-                    el.style.border = '1px dashed #999';
-                    el.style.padding = '0.5em';
-                    el.style.backgroundColor = '#f8f8f8';
-                });
-                
-                // 4. Process elements that use the "hidden" attribute
-                document.querySelectorAll('[hidden]').forEach(el => {
-                    // Check if this might contain useful content
-                    if (el.textContent.trim().length > 20 || 
-                        el.querySelectorAll('p, h1, h2, h3, h4, h5, h6').length > 0) {
-                        el.removeAttribute('hidden');
-                        el.style.display = 'block';
-                    }
-                });
-                
-                // 5. Find and expand ARIA tabpanels that might be hidden
-                document.querySelectorAll('[role="tab"]').forEach(tab => {
-                    // Mark tab as selected/active
-                    tab.setAttribute('aria-selected', 'true');
-                    tab.classList.add('active');
-                    
-                    // Find and show the associated tabpanel
-                    const panelId = tab.getAttribute('aria-controls');
-                    if (panelId) {
-                        const panel = document.getElementById(panelId);
-                        if (panel) {
-                            panel.style.display = 'block';
-                            panel.style.visibility = 'visible';
-                        }
-                    }
-                });
-            };
-            
-            // Run accessibility content exposure multiple times
-            exposeAccessibleContent();
-            setTimeout(exposeAccessibleContent, 500);
-        }""")
-        
-        # Allow time for accessibility processing
-        page.wait_for_timeout(600)
-        
-        # Now execute JavaScript to expand common interactive elements without causing navigation
-        page.evaluate(
-            """(currentUrl) => {
-            // Function to check if an element is likely to cause navigation
-            const wouldCauseNavigation = (element) => {
-                // Check for links with external hrefs
-                if (element.tagName === 'A') {
-                    const href = element.getAttribute('href');
-                    // Skip if it's an external link, absolute path, or not a fragment/hash link
-                    if (href && 
-                        href !== '#' && 
-                        !href.startsWith('#') && 
-                        !href.startsWith('javascript:') &&
-                        !element.getAttribute('role')) {
-                        return true;
-                    }
-                    
-                    // Check if it has target="_blank" which opens in new tab/window
-                    if (element.getAttribute('target') === '_blank') {
-                        return true;
-                    }
-                }
-                
-                // Check for buttons or other elements with onclick that might navigate
-                if (element.hasAttribute('onclick')) {
-                    const onclickValue = element.getAttribute('onclick');
-                    if (onclickValue.includes('location.href') || 
-                        onclickValue.includes('window.location') || 
-                        onclickValue.includes('navigate')) {
-                        return true;
-                    }
-                }
-                
-                // Check for typical navigation classes or IDs
-                const elementClasses = element.className.toLowerCase();
-                const elementId = (element.id || '').toLowerCase();
-                const navigationTerms = ['nav-link', 'navbar', 'menu-item', 'pagination'];
-                
-                for (const term of navigationTerms) {
-                    if (elementClasses.includes(term) || elementId.includes(term)) {
-                        return true;
-                    }
-                }
-                
-                return false;
-            };
-            
-            // Function to expand elements
-            const expandElements = () => {
-                // 1. Click on common dropdown/accordion triggers - only those that won't navigate
-                const clickSelectors = [
-                    // Common accordion/dropdown triggers
-                    'details:not([open])',  // Include details elements to expand them
-                    '.accordion:not(.active), .accordion:not(.show)',
-                    '.collapse-trigger, .expand-trigger',
-                    '[aria-expanded="false"]',
-                    '.dropdown-toggle, .dropdown-trigger',
-                    // Read more buttons
-                    '.read-more, .show-more',
-                    // FAQ elements
-                    '.faq-question:not(.active), .faq-item:not(.active)',
-                    // Tab panels that might be hidden
-                    '.tab:not(.active)'
-                ];
-                
-                // Process each type of clickable element, checking if it would cause navigation
-                clickSelectors.forEach(selector => {
-                    document.querySelectorAll(selector).forEach(el => {
-                        try {
-                            // Only click if element won't cause navigation
-                            if (!wouldCauseNavigation(el)) {
-                                // Store url before click
-                                const beforeUrl = window.location.href;
-                                
-                                // Click the element
-                                el.click();
-                                
-                                // Check if URL changed (navigation occurred)
-                                if (window.location.href !== beforeUrl) {
-                                    console.warn('Navigation detected, attempting to go back');
-                                    // Try to restore previous URL
-                                    history.pushState(null, '', beforeUrl);
-                                }
-                            }
-                        } catch (e) {
-                            // Ignore errors if element can't be clicked
+                    // Make all children of details visible
+                    Array.from(el.children).forEach(child => {
+                        if (child.tagName !== 'SUMMARY') {
+                            child.style.display = 'block';
+                            child.style.visibility = 'visible';
                         }
                     });
                 });
                 
-                // 2. Force-expand elements by setting attributes and styles
-                // Explicitly open all details elements to make their content visible in PDF
-                const showSelectors = [
-                    '.collapse:not(.show)',
-                    '.accordion-content', 
-                    '.dropdown-menu',
-                    '.hidden-content',
+                // 2. Make hidden accessible content visible
+                const accessibilitySelectors = [
                     '[aria-hidden="true"]',
-                    // Common accessibility-hiding classes
+                    '[aria-expanded="false"]',
                     '.sr-only', '.screen-reader-text', '.visually-hidden',
-                    // Additional selectors for potentially hidden but important content
-                    '[role="tabpanel"]', '[role="dialog"]', '[role="menu"]',
-                    '[role="tooltip"]', '[role="alert"]', '[role="status"]'
+                    '[hidden]',
+                    '[role="tabpanel"]'
                 ];
                 
-                // Expand details elements multiple ways to ensure they're visible in the PDF
-                document.querySelectorAll('details').forEach(el => {
-                    // Set both the open attribute and property
-                    el.setAttribute('open', 'true');  
-                    el.open = true;
-                    
-                    // Force display of the details content
-                    el.style.display = 'block';
-                    
-                    // Also directly target and force-show the summary's sibling content
-                    const summary = el.querySelector('summary');
-                    if (summary) {
-                        // Force all siblings of summary to be visible
-                        let sibling = summary.nextElementSibling;
-                        while (sibling) {
-                            sibling.style.display = 'block';
-                            sibling.style.visibility = 'visible';
-                            sibling.style.height = 'auto';
-                            sibling.style.maxHeight = 'none';
-                            sibling.style.opacity = '1';
-                            sibling = sibling.nextElementSibling;
-                        }
-                    }
-                });
-                
-                showSelectors.forEach(selector => {
+                accessibilitySelectors.forEach(selector => {
                     document.querySelectorAll(selector).forEach(el => {
-                        // Set multiple display-related properties to ensure visibility
+                        // Basic show operation
+                        if (selector === '[aria-hidden="true"]') {
+                            el.setAttribute('aria-hidden', 'false');
+                        } else if (selector === '[aria-expanded="false"]') {
+                            el.setAttribute('aria-expanded', 'true');
+                        } else if (selector === '[hidden]') {
+                            el.removeAttribute('hidden');
+                        }
+                        
+                        // Apply visibility styles
                         el.style.display = 'block';
                         el.style.visibility = 'visible';
-                        el.style.opacity = '1';
                         el.style.height = 'auto';
+                        el.style.maxHeight = 'none';
                         el.style.overflow = 'visible';
-                        el.setAttribute('aria-hidden', 'false');
-                        
-                        // Add active/show classes that might be used for showing content
-                        el.classList.add('active');
-                        el.classList.add('show');
-                        el.classList.remove('hidden');
-                        el.classList.remove('collapsed');
                     });
                 });
                 
@@ -488,40 +283,48 @@ def _expand_hidden_elements(page: Page) -> None:
                     el.style.webkitLineClamp = 'unset';
                     el.style.display = 'block';
                     el.style.overflow = 'visible';
-                    el.classList.remove('truncated');
-                    el.classList.remove('clamp');
+                });
+                
+                // 4. Show elements commonly used to hide content
+                const contentSelectors = [
+                    '.collapse', '.accordion-content', '.dropdown-menu',
+                    '.hidden-content', '.expandable-content',
+                    '.read-more-content', '.show-more-content'
+                ];
+                
+                contentSelectors.forEach(selector => {
+                    document.querySelectorAll(selector).forEach(el => {
+                        el.style.display = 'block';
+                        el.style.visibility = 'visible';
+                        el.style.height = 'auto';
+                        el.style.opacity = '1';
+                        el.classList.add('show');
+                        el.classList.add('active');
+                        el.classList.remove('hidden');
+                        el.classList.remove('collapsed');
+                    });
                 });
             };
             
-            // Run expansion multiple times with increasing delays to catch elements
-            // that appear incrementally after previous expansions or depend on animations
-            expandElements();
-            
-            // Multiple passes with increasing delays to catch cascading expansions
-            setTimeout(expandElements, 300);
-            setTimeout(expandElements, 800);
-            setTimeout(expandElements, 1500); 
-        }"""
-        )
-
-        # Consistent pause to allow expansions to complete
-        page.wait_for_timeout(800)
+            // Run content expansion
+            showHiddenContent();
+            // Second pass to catch any elements modified by the first pass
+            setTimeout(showHiddenContent, 300);
+        }""")
         
-        # Handle subscription popups, cookie consent dialogs, and overlay modals
-        logger.info("Removing subscription popups, cookie dialogs, and overlays")
-        page.evaluate(
-            """() => {
-            // Function to remove annoying overlays and popups
-            const removePopupsAndOverlays = () => {
-                // 1. Handle common overlay modals
+        # Allow time for the first expansion pass
+        page.wait_for_timeout(400)
+        
+        # Second pass: Remove overlays and distractions
+        logger.info("Removing overlays and popups")
+        page.evaluate("""() => {
+            // Remove popups and overlays
+            const removeOverlays = () => {
+                // Common overlay and popup selectors
                 const overlaySelectors = [
-                    // Gray/dark overlays that block content
-                    '.modal-backdrop', '.overlay', '.popup-overlay', '.modal-overlay',
-                    'div[class*="overlay"]', 'div[id*="overlay"]',
-                    'div[style*="opacity"][style*="background"]',
-                    // Elements with high z-index that might be overlays
-                    'div[style*="z-index: 999"]', 'div[style*="z-index: 9999"]',
-                    'div[style*="z-index: 10000"]', 'div[style*="z-index: 2147483647"]'
+                    '.modal-backdrop', '.overlay', '.popup-overlay',
+                    '.cookie-banner', '.cookie-consent', '.gdpr-banner',
+                    '.subscription-popup', '.newsletter-popup', '.paywall'
                 ];
                 
                 overlaySelectors.forEach(selector => {
@@ -530,418 +333,143 @@ def _expand_hidden_elements(page: Page) -> None:
                             el.remove();
                         } catch(e) {
                             el.style.display = 'none';
-                            el.style.visibility = 'hidden';
-                            el.style.opacity = '0';
-                            el.style.zIndex = '-1';
                         }
                     });
                 });
                 
-                // 2. Handle subscription popups
-                const subscriptionSelectors = [
-                    // Common subscription popup containers
-                    '.subscription-popup', '.subscribe-popup', '.newsletter-popup',
-                    'div[class*="subscribe"]', 'div[id*="subscribe"]',
-                    'div[class*="newsletter"]', 'div[id*="newsletter"]',
-                    'div[class*="paywall"]', 'div[id*="paywall"]',
-                    // Modals and dialogs that might be subscription-related
-                    '.modal.show', '.modal:not(.fade)', '.modal[style*="display: block"]',
-                    'div[role="dialog"]', 'div[aria-modal="true"]',
-                    // Popups with words like subscribe in them
-                    'div:not([style*="display: none"]) > div:not([style*="display: none"]) h2:contains("Subscribe")',
-                    'div:not([style*="display: none"]) > div:not([style*="display: none"]) h3:contains("Subscribe")'
-                ];
-                
-                subscriptionSelectors.forEach(selector => {
-                    try {
-                        document.querySelectorAll(selector).forEach(el => {
-                            el.remove();
-                        });
-                    } catch(e) {
-                        // Some complex selectors might not be supported, ignore errors
-                    }
-                });
-                
-                // 3. Handle cookie consent dialogs
-                const cookieSelectors = [
-                    // Common cookie consent containers
-                    '.cookie-banner', '.cookie-dialog', '.cookie-consent',
-                    '.cookies-popup', '.gdpr-banner', '.consent-popup',
-                    'div[class*="cookie"]', 'div[id*="cookie"]', 
-                    'div[class*="gdpr"]', 'div[id*="gdpr"]',
-                    'div[class*="consent"]', 'div[id*="consent"]',
-                    // Look for accept buttons to click them first
-                    'button[id*="accept"]', 'button[class*="accept"]',
-                    'a[id*="accept"]', 'a[class*="accept"]'
-                ];
-                
-                // Try to click accept buttons first
-                const acceptButtons = document.querySelectorAll('button, a');
-                for (const button of acceptButtons) {
-                    const text = button.textContent.toLowerCase();
-                    if (text.includes('accept') || text.includes('agree') || 
-                        text.includes('got it') || text.includes('i understand') ||
-                        text.includes('okay') || text.includes('continue')) {
-                        try {
-                            button.click();
-                            // Short delay to let the click take effect
-                            return; // Exit to give the click a chance to work
-                        } catch(e) {
-                            // Ignore if click fails
-                        }
-                    }
-                }
-                
-                // Then try to remove cookie dialogs
-                cookieSelectors.forEach(selector => {
-                    document.querySelectorAll(selector).forEach(el => {
-                        try {
-                            el.remove();
-                        } catch(e) {
-                            el.style.display = 'none';
-                        }
-                    });
-                });
-                
-                // 4. Fix body scroll if it was locked
+                // Fix body scroll if it was locked
                 document.body.style.overflow = 'auto';
-                document.body.style.position = 'static';
                 document.documentElement.style.overflow = 'auto';
             };
             
-            // Run multiple times with progressive delays to catch popups that might reappear
-            // or load dynamically after initial user interaction
-            removePopupsAndOverlays();
-            setTimeout(removePopupsAndOverlays, 400);
-            setTimeout(removePopupsAndOverlays, 1000);
-            setTimeout(removePopupsAndOverlays, 2000);
-        }"""
-        )
+            removeOverlays();
+        }""")
         
-        page.wait_for_timeout(600)  # Wait for popup removal to finish
+        # Allow time for overlay removal
+        page.wait_for_timeout(300)
         
-        # Check if the page URL has changed after removing popups
-        if page.url != current_url:
-            logger.warning(f"URL changed to {page.url} after popup removal, attempting to navigate back")
-            page.goto(current_url, wait_until="networkidle", timeout=30000)
-        
-        # Process any additional accessibility-specific content and ensure details are expanded
-        logger.info("Processing additional accessibility features and expanding details elements")
-        page.evaluate("""() => {
-            // Additional specific pass just for details elements to make sure they're expanded
-            const forceExpandDetails = () => {
-                // Use all possible techniques to expand details elements
-                document.querySelectorAll('details').forEach(el => {
-                    // Force open using attribute, property, and style
-                    el.setAttribute('open', 'true');
-                    el.open = true;
-                    el.style.display = 'block';
-                    
-                    // Make the content visible by finding the summary and forcing all siblings visible
-                    const summary = el.querySelector('summary');
-                    if (summary) {
-                        // Try to trigger a click on the summary
-                        try {
-                            summary.click();
-                        } catch(e) {}
-                        
-                        // Force display for all content after the summary
-                        let sibling = summary.nextElementSibling;
-                        while (sibling) {
-                            sibling.style.display = 'block';
-                            sibling.style.visibility = 'visible';
-                            sibling.style.height = 'auto';
-                            sibling.style.maxHeight = 'none';
-                            sibling.style.opacity = '1';
-                            sibling = sibling.nextElementSibling;
+        # Third pass: Safe interaction with content expanders
+        logger.info("Expanding interactive elements")
+        page.evaluate("""(currentUrl) => {
+            // Safely interact with elements that expand content
+            const safelyExpandInteractive = () => {
+                // Helper to check if element would cause navigation
+                const wouldNavigate = (el) => {
+                    if (el.tagName === 'A') {
+                        const href = el.getAttribute('href');
+                        if (href && 
+                            href !== '#' && 
+                            !href.startsWith('#') && 
+                            !href.startsWith('javascript:')) {
+                            return true;
                         }
                     }
-                    
-                    // As a fallback, make all children visible
-                    Array.from(el.children).forEach(child => {
-                        if (child.tagName !== 'SUMMARY') {
-                            child.style.display = 'block';
-                            child.style.visibility = 'visible';
+                    return false;
+                };
+                
+                // Find and click "read more"/"show more" buttons that won't navigate
+                const expandButtons = Array.from(document.querySelectorAll('button, a, span, div'))
+                    .filter(el => {
+                        const text = (el.textContent || '').toLowerCase();
+                        return (text.includes('more') || text.includes('expand')) && 
+                               !wouldNavigate(el);
+                    });
+                
+                expandButtons.forEach(el => {
+                    try {
+                        const beforeUrl = window.location.href;
+                        el.click();
+                        
+                        // Revert if navigation occurred
+                        if (window.location.href !== beforeUrl) {
+                            history.pushState(null, '', beforeUrl);
+                        }
+                    } catch (e) {
+                        // Ignore click errors
+                    }
+                });
+                
+                // Expand common UI patterns
+                const expandableSelectors = [
+                    'details:not([open])',
+                    '.accordion:not(.active)',
+                    '[aria-expanded="false"]',
+                    '.faq-question:not(.active)'
+                ];
+                
+                expandableSelectors.forEach(selector => {
+                    document.querySelectorAll(selector).forEach(el => {
+                        if (!wouldNavigate(el)) {
+                            try {
+                                el.click();
+                            } catch(e) {
+                                // If clicking fails, try direct attribute manipulation
+                                if (selector === 'details:not([open])') {
+                                    el.setAttribute('open', 'true');
+                                    el.open = true;
+                                } else if (selector === '[aria-expanded="false"]') {
+                                    el.setAttribute('aria-expanded', 'true');
+                                }
+                                el.classList.add('active');
+                                el.classList.add('show');
+                            }
                         }
                     });
                 });
             };
             
-            // Run details expansion immediately and again with a delay
-            forceExpandDetails();
-            setTimeout(forceExpandDetails, 500);
-            setTimeout(forceExpandDetails, 1000);
-            
-            // Function to process elements that might have alternative text representations
-            const processAccessibilityText = () => {
-                // 1. Make aria-label content visible when it might contain useful information
-                document.querySelectorAll('[aria-label]:not(img):not(input):not(button)').forEach(el => {
-                    const ariaLabel = el.getAttribute('aria-label');
-                    // Only process substantive aria-labels (not just "close" or "menu")
-                    if (ariaLabel && ariaLabel.length > 15 && !el.textContent.includes(ariaLabel)) {
-                        // Create a visible representation of the aria-label text
-                        const labelEl = document.createElement('div');
-                        labelEl.textContent = ariaLabel;
-                        labelEl.style.padding = '0.5em';
-                        labelEl.style.margin = '0.5em 0';
-                        labelEl.style.borderLeft = '3px solid #666';
-                        labelEl.style.backgroundColor = '#f0f0f0';
-                        labelEl.style.fontStyle = 'italic';
-                        labelEl.style.fontSize = '0.9em';
-                        
-                        // Add the label text visibly near the element
-                        el.appendChild(labelEl);
-                    }
-                });
-                
-                // 2. Make aria-description content visible
-                document.querySelectorAll('[aria-description]').forEach(el => {
-                    const description = el.getAttribute('aria-description');
-                    if (description && description.length > 10) {
-                        const descEl = document.createElement('div');
-                        descEl.textContent = description;
-                        descEl.style.color = '#666';
-                        descEl.style.fontStyle = 'italic';
-                        descEl.style.margin = '0.3em 0';
-                        el.appendChild(descEl);
-                    }
-                });
-                
-                // 3. Look for longdesc attributes on images (rarely used but valuable)
-                document.querySelectorAll('img[longdesc]').forEach(img => {
-                    const longdesc = img.getAttribute('longdesc');
-                    if (longdesc) {
-                        const descEl = document.createElement('div');
-                        descEl.textContent = `Image description: ${longdesc}`;
-                        descEl.style.fontStyle = 'italic';
-                        descEl.style.margin = '0.5em 0';
-                        descEl.style.maxWidth = img.width + 'px';
-                        img.parentNode.insertBefore(descEl, img.nextSibling);
-                    }
-                });
-                
-                // 4. Process figure elements with figcaption to ensure captions are visible
-                document.querySelectorAll('figure').forEach(fig => {
-                    const caption = fig.querySelector('figcaption');
-                    if (caption) {
-                        caption.style.display = 'block';
-                        caption.style.visibility = 'visible';
-                        caption.style.margin = '0.5em 0';
-                    }
-                });
-            };
-            
-            processAccessibilityText();
-        }""")
+            safelyExpandInteractive();
+        }""", current_url)
         
-        # Allow time for accessibility processing
+        # Allow time for interactive elements
         page.wait_for_timeout(500)
         
-        # Multiple passes with more specific selectors that might trigger UI updates
-        logger.info("Performing multiple passes of interactive element expansion")
-        
-        # Define how many passes to perform (3-4 is usually sufficient)
-        expansion_passes = 3
-        
-        for pass_num in range(expansion_passes):
-            logger.info(f"Expansion pass {pass_num + 1}/{expansion_passes}")
-            page.evaluate(
-            """(currentUrl) => {
-            // Helper to check if element would cause navigation
-            const wouldCauseNavigation = (element) => {
-                // For links, check href
-                if (element.tagName === 'A') {
-                    const href = element.getAttribute('href');
-                    if (href && 
-                        href !== '#' && 
-                        !href.startsWith('#') && 
-                        !href.startsWith('javascript:')) {
-                        return true;
-                    }
-                }
-                
-                // Check for onClick handlers that might navigate
-                if (element.hasAttribute('onclick')) {
-                    const onClick = element.getAttribute('onclick');
-                    if (onClick.includes('location') || onClick.includes('href')) {
-                        return true;
-                    }
-                }
-                
-                return false;
-            };
-            
-            // Find elements with "show more" or similar text
-            const textExpandButtons = Array.from(document.querySelectorAll('button, a, span, div'))
-                .filter(el => {
-                    const text = (el.textContent || '').toLowerCase();
-                    return (text.includes('show more') || 
-                           text.includes('read more') || 
-                           text.includes('expand') ||
-                           text.includes('view more') ||
-                           text.includes('see all')) && 
-                           !wouldCauseNavigation(el);
-                });
-                
-            // Click these text-based expansion elements safely
-            textExpandButtons.forEach(el => {
-                try {
-                    // Remember URL before click
-                    const beforeUrl = window.location.href;
-                    
-                    // Click the element
-                    el.click();
-                    
-                    // Check if URL changed
-                    if (window.location.href !== beforeUrl) {
-                        console.warn('Navigation detected, reverting');
-                        history.pushState(null, '', beforeUrl);
-                    }
-                } catch (e) {
-                    // Ignore errors
-                }
-            });
-        }""", current_url)
-
-            # Increasing timeouts for each pass to allow cascading elements to appear
-            page.wait_for_timeout(500 + 300 * pass_num)
-        
-        # Make one dedicated pass for details elements right before PDF generation
-        logger.info("Final details element expansion pass")
+        # Final check and expansion for any remaining hidden content
+        logger.info("Final content expansion pass")
         page.evaluate("""() => {
-            // Function to force open details with multiple techniques
-            const finalExpandDetails = () => {
-                document.querySelectorAll('details').forEach(el => {
-                    // 1. Set the open attribute and property
-                    el.setAttribute('open', 'true');
-                    el.open = true;
-                    
-                    // 2. Force display of all children
-                    Array.from(el.children).forEach(child => {
-                        child.style.display = 'block';
-                        child.style.visibility = 'visible';
-                        child.style.height = 'auto';
-                    });
-                    
-                    // 3. Add inline CSS to force open state
-                    el.style.cssText += '; display: block !important; height: auto !important; visibility: visible !important;';
-                    
-                    // 4. Try to click the summary as a last resort
-                    const summary = el.querySelector('summary');
-                    if (summary) {
-                        try { summary.click(); } catch (e) {}
-                        
-                        // Force visibility of all non-summary content
-                        let sibling = summary.nextElementSibling;
-                        while (sibling) {
-                            sibling.style.cssText += '; display: block !important; visibility: visible !important; height: auto !important;';
-                            sibling = sibling.nextElementSibling;
-                        }
+            // Final pass to ensure maximum content visibility
+            const finalExpansion = () => {
+                // 1. Ensure all content heights are adequate
+                document.querySelectorAll('[style*="height"], [style*="max-height"]').forEach(el => {
+                    // Skip truly huge elements to avoid breaking layout
+                    if (el.clientHeight < 1000 && el.textContent.trim().length > 10) {
+                        el.style.height = 'auto';
+                        el.style.maxHeight = 'none';
                     }
                 });
-            };
-            
-            // Run the expansion multiple times to catch any that might be added dynamically
-            finalExpandDetails();
-            setTimeout(finalExpandDetails, 300);
-            setTimeout(finalExpandDetails, 700);
-        }""")
-        
-        # Add sufficient delay to ensure details expansions take effect visually
-        page.wait_for_timeout(1000)
-        
-        # Final check to ensure we're still on the original page
-        if page.url != current_url:
-            logger.warning(f"URL changed to {page.url} after expansion, navigating back to original")
-            page.goto(current_url, wait_until="networkidle", timeout=30000)
-            # Wait again after returning to original page
-            page.wait_for_timeout(800)
-        
-        # Do one final expansion pass after everything else is done
-        logger.info("Performing final expansion pass with accessibility focus")
-        page.evaluate("""() => {
-            const expandFinalElements = () => {
-                // Force-expand any remaining elements by looking for specific CSS patterns
-                document.querySelectorAll('[style*="height: 0"]').forEach(el => {
-                    el.style.height = 'auto';
-                    el.style.maxHeight = 'none';
-                });
                 
-                // Final accessibility-specific processing
-                // 1. Process any remaining ARIA live regions which often contain dynamic content
-                document.querySelectorAll('[aria-live]').forEach(el => {
-                    el.style.display = 'block';
-                    el.style.visibility = 'visible';
-                    el.style.height = 'auto';
-                    el.style.overflow = 'visible';
-                });
-                
-                // 2. Look for any element with aria attributes that might contain hidden content
-                document.querySelectorAll('[aria-describedby], [aria-details], [aria-labelledby]').forEach(el => {
-                    // Process elements referenced by ID in these attributes
-                    ['aria-describedby', 'aria-details', 'aria-labelledby'].forEach(attr => {
-                        const ids = el.getAttribute(attr);
-                        if (ids) {
-                            ids.split(/\s+/).forEach(id => {
-                                const referenced = document.getElementById(id);
-                                if (referenced) {
-                                    referenced.style.display = 'block';
-                                    referenced.style.visibility = 'visible';
-                                    referenced.style.height = 'auto';
-                                    referenced.style.overflow = 'visible';
-                                    referenced.style.position = 'static';
-                                }
-                            });
-                        }
-                    });
-                });
-                
-                document.querySelectorAll('[style*="display: none"]').forEach(el => {
-                    // Check if this might be an important content element (not a utility element)
-                    const classes = el.className.toLowerCase();
-                    const id = (el.id || '').toLowerCase();
-                    
-                    // Skip likely utility/navigation elements
-                    if (classes.includes('menu') || 
-                        classes.includes('nav') || 
-                        id.includes('menu') || 
-                        id.includes('nav')) {
-                        return;
-                    }
-                    
-                    // Make potentially useful hidden content visible
-                    if (classes.includes('content') || 
-                        classes.includes('text') || 
-                        classes.includes('body') ||
-                        el.querySelector('p, h1, h2, h3, h4, h5, h6, article')) {
+                // 2. Final check for display:none elements with content
+                document.querySelectorAll('[style*="display: none"], [style*="visibility: hidden"]').forEach(el => {
+                    // Only make visible if it contains actual content
+                    if (el.textContent.trim().length > 20 || 
+                        el.querySelectorAll('p, h1, h2, h3, h4, h5, h6').length > 0) {
                         el.style.display = 'block';
                         el.style.visibility = 'visible';
                     }
                 });
                 
-                // Try to make all text visible by increasing any small heights
-                document.querySelectorAll('div, p, section, article').forEach(el => {
-                    const computedStyle = window.getComputedStyle(el);
-                    const height = parseFloat(computedStyle.height);
-                    // If element has suspiciously small height but contains text
-                    if (height < 50 && el.textContent.trim().length > 10) {
-                        el.style.height = 'auto';
-                        el.style.maxHeight = 'none';
-                        el.style.overflow = 'visible';
-                    }
+                // 3. Final pass for details elements
+                document.querySelectorAll('details').forEach(el => {
+                    el.setAttribute('open', 'true');
+                    el.open = true;
+                    el.style.display = 'block';
                 });
             };
             
-            // Run multiple times
-            expandFinalElements();
-            setTimeout(expandFinalElements, 300);
+            finalExpansion();
         }""")
         
-        # Final wait to ensure all expansions take effect
-        page.wait_for_timeout(800)
+        # Allow final expansions to take effect
+        page.wait_for_timeout(500)
         
-        logger.info("Completed multiple passes of hidden element expansion, still on original URL")
-
+        # Check if URL changed and restore if needed
+        if page.url != current_url:
+            logger.warning(f"URL changed to {page.url}, navigating back to original")
+            page.goto(current_url, wait_until="networkidle", timeout=30000)
+            page.wait_for_timeout(500)
+        
+        logger.info("Completed content expansion successfully")
+        
     except Exception as e:
         logger.warning(f"Error while expanding hidden elements: {str(e)}")
         # Continue if expansion fails - this is non-critical
