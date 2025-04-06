@@ -361,13 +361,14 @@ def _expand_hidden_elements(page: Page) -> None:
                 });
             };
             
-            // Run expansion multiple times with slight delays to catch elements that might
-            // appear after other elements are expanded
+            // Run expansion multiple times with increasing delays to catch elements
+            // that appear incrementally after previous expansions or depend on animations
             expandElements();
             
-            // Schedule another expansion after a short delay to catch any elements
-            // that might be loaded or displayed dynamically after initial expansion
+            // Multiple passes with increasing delays to catch cascading expansions
             setTimeout(expandElements, 300);
+            setTimeout(expandElements, 800);
+            setTimeout(expandElements, 1500); 
         }"""
         )
 
