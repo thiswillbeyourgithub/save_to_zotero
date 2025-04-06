@@ -476,9 +476,12 @@ def _expand_hidden_elements(page: Page) -> None:
                 document.documentElement.style.overflow = 'auto';
             };
             
-            // Run multiple times with delay to catch things that might reappear
+            // Run multiple times with progressive delays to catch popups that might reappear
+            // or load dynamically after initial user interaction
             removePopupsAndOverlays();
             setTimeout(removePopupsAndOverlays, 400);
+            setTimeout(removePopupsAndOverlays, 1000);
+            setTimeout(removePopupsAndOverlays, 2000);
         }"""
         )
         
@@ -489,9 +492,15 @@ def _expand_hidden_elements(page: Page) -> None:
             logger.warning(f"URL changed to {page.url} after popup removal, attempting to navigate back")
             page.goto(current_url, wait_until="networkidle", timeout=30000)
         
-        # Second pass with more specific selectors that might trigger UI updates
-        logger.info("Performing secondary expansion of interactive elements")
-        page.evaluate(
+        # Multiple passes with more specific selectors that might trigger UI updates
+        logger.info("Performing multiple passes of interactive element expansion")
+        
+        # Define how many passes to perform (3-4 is usually sufficient)
+        expansion_passes = 3
+        
+        for pass_num in range(expansion_passes):
+            logger.info(f"Expansion pass {pass_num + 1}/{expansion_passes}")
+            page.evaluate(
             """(currentUrl) => {
             // Helper to check if element would cause navigation
             const wouldCauseNavigation = (element) => {
@@ -549,8 +558,8 @@ def _expand_hidden_elements(page: Page) -> None:
             });
         }""", current_url)
 
-        # Final consistent delay to allow all expansions to complete
-        page.wait_for_timeout(500)
+            # Increasing timeouts for each pass to allow cascading elements to appear
+            page.wait_for_timeout(500 + 300 * pass_num)
         
         # Final check to ensure we're still on the original page
         if page.url != current_url:
@@ -559,7 +568,61 @@ def _expand_hidden_elements(page: Page) -> None:
             # Wait again after returning to original page
             page.wait_for_timeout(800)
         
-        logger.info("Completed expansion of hidden elements, still on original URL")
+        # Do one final expansion pass after everything else is done
+        logger.info("Performing final expansion pass")
+        page.evaluate("""() => {
+            const expandFinalElements = () => {
+                // Force-expand any remaining elements by looking for specific CSS patterns
+                document.querySelectorAll('[style*="height: 0"]').forEach(el => {
+                    el.style.height = 'auto';
+                    el.style.maxHeight = 'none';
+                });
+                
+                document.querySelectorAll('[style*="display: none"]').forEach(el => {
+                    // Check if this might be an important content element (not a utility element)
+                    const classes = el.className.toLowerCase();
+                    const id = (el.id || '').toLowerCase();
+                    
+                    // Skip likely utility/navigation elements
+                    if (classes.includes('menu') || 
+                        classes.includes('nav') || 
+                        id.includes('menu') || 
+                        id.includes('nav')) {
+                        return;
+                    }
+                    
+                    // Make potentially useful hidden content visible
+                    if (classes.includes('content') || 
+                        classes.includes('text') || 
+                        classes.includes('body') ||
+                        el.querySelector('p, h1, h2, h3, h4, h5, h6, article')) {
+                        el.style.display = 'block';
+                        el.style.visibility = 'visible';
+                    }
+                });
+                
+                // Try to make all text visible by increasing any small heights
+                document.querySelectorAll('div, p, section, article').forEach(el => {
+                    const computedStyle = window.getComputedStyle(el);
+                    const height = parseFloat(computedStyle.height);
+                    // If element has suspiciously small height but contains text
+                    if (height < 50 && el.textContent.trim().length > 10) {
+                        el.style.height = 'auto';
+                        el.style.maxHeight = 'none';
+                        el.style.overflow = 'visible';
+                    }
+                });
+            };
+            
+            // Run multiple times
+            expandFinalElements();
+            setTimeout(expandFinalElements, 300);
+        }""")
+        
+        # Final wait to ensure all expansions take effect
+        page.wait_for_timeout(800)
+        
+        logger.info("Completed multiple passes of hidden element expansion, still on original URL")
 
     except Exception as e:
         logger.warning(f"Error while expanding hidden elements: {str(e)}")
