@@ -215,6 +215,9 @@ def _expand_hidden_elements(page: Page) -> None:
     """
     Expand dropdowns, accordions, and other hidden content to ensure
     all text is visible in the PDF without navigating away from the current page.
+    
+    Leverages accessibility features to expose content that may be hidden
+    but accessible to screen readers.
 
     Args:
         page: The Playwright page object
@@ -224,10 +227,114 @@ def _expand_hidden_elements(page: Page) -> None:
         current_url = page.url
         logger.info(f"Current URL before expansion: {current_url}")
         
+        # Enable accessibility features to better expose hidden content
+        logger.info("Enabling accessibility mode to expose hidden content")
+        page.evaluate("""() => {
+            // Add attribute to document to indicate we want all content exposed
+            document.documentElement.setAttribute('data-force-accessibility', 'true');
+            
+            // Some sites check for screen readers - let's pretend to be one
+            // These are common properties checked to detect screen readers
+            Object.defineProperty(window, 'speechSynthesis', {
+                value: { speak: function() {} },
+                configurable: true
+            });
+            
+            // Mimic some common screen reader detection flags
+            if (!window.hasOwnProperty('onvoiceschanged')) {
+                Object.defineProperty(window, 'onvoiceschanged', {
+                    value: function() {},
+                    configurable: true
+                });
+            }
+        }""")
+        
         # Consistent small delay before expanding elements
         time.sleep(200 / 1000)
 
-        # Execute JavaScript to expand common interactive elements without causing navigation
+        # First, process accessibility-specific elements to expose content for screen readers
+        logger.info("Processing accessibility attributes to expose hidden content")
+        page.evaluate("""() => {
+            // Function to expose content hidden via ARIA attributes
+            const exposeAccessibleContent = () => {
+                // 1. Make all aria-hidden="true" elements visible
+                document.querySelectorAll('[aria-hidden="true"]').forEach(el => {
+                    el.setAttribute('aria-hidden', 'false');
+                    el.style.display = 'block';
+                    el.style.visibility = 'visible';
+                });
+                
+                // 2. Expand all elements with aria-expanded="false"
+                document.querySelectorAll('[aria-expanded="false"]').forEach(el => {
+                    el.setAttribute('aria-expanded', 'true');
+                    
+                    // Find the controlled element if specified
+                    const controlsId = el.getAttribute('aria-controls');
+                    if (controlsId) {
+                        const controlledEl = document.getElementById(controlsId);
+                        if (controlledEl) {
+                            controlledEl.style.display = 'block';
+                            controlledEl.style.visibility = 'visible';
+                            controlledEl.setAttribute('aria-hidden', 'false');
+                        }
+                    }
+                });
+                
+                // 3. Show elements that might be conditionally displayed for screen readers
+                document.querySelectorAll('.sr-only, .screen-reader-text, .visually-hidden, .visually-hidden-focusable').forEach(el => {
+                    // Remove special positioning that hides from sighted users but keeps for screen readers
+                    el.style.position = 'static';
+                    el.style.width = 'auto';
+                    el.style.height = 'auto';
+                    el.style.overflow = 'visible';
+                    el.style.clip = 'auto';
+                    el.style.clipPath = 'none';
+                    el.style.whiteSpace = 'normal';
+                    el.style.margin = '1em 0';  // Add some spacing
+                    
+                    // Add visual indication this was screen-reader only content
+                    el.style.border = '1px dashed #999';
+                    el.style.padding = '0.5em';
+                    el.style.backgroundColor = '#f8f8f8';
+                });
+                
+                // 4. Process elements that use the "hidden" attribute
+                document.querySelectorAll('[hidden]').forEach(el => {
+                    // Check if this might contain useful content
+                    if (el.textContent.trim().length > 20 || 
+                        el.querySelectorAll('p, h1, h2, h3, h4, h5, h6').length > 0) {
+                        el.removeAttribute('hidden');
+                        el.style.display = 'block';
+                    }
+                });
+                
+                // 5. Find and expand ARIA tabpanels that might be hidden
+                document.querySelectorAll('[role="tab"]').forEach(tab => {
+                    // Mark tab as selected/active
+                    tab.setAttribute('aria-selected', 'true');
+                    tab.classList.add('active');
+                    
+                    // Find and show the associated tabpanel
+                    const panelId = tab.getAttribute('aria-controls');
+                    if (panelId) {
+                        const panel = document.getElementById(panelId);
+                        if (panel) {
+                            panel.style.display = 'block';
+                            panel.style.visibility = 'visible';
+                        }
+                    }
+                });
+            };
+            
+            // Run accessibility content exposure multiple times
+            exposeAccessibleContent();
+            setTimeout(exposeAccessibleContent, 500);
+        }""")
+        
+        # Allow time for accessibility processing
+        page.wait_for_timeout(600)
+        
+        # Now execute JavaScript to expand common interactive elements without causing navigation
         page.evaluate(
             """(currentUrl) => {
             // Function to check if an element is likely to cause navigation
@@ -324,7 +431,12 @@ def _expand_hidden_elements(page: Page) -> None:
                     '.accordion-content', 
                     '.dropdown-menu',
                     '.hidden-content',
-                    '[aria-hidden="true"]'
+                    '[aria-hidden="true"]',
+                    // Common accessibility-hiding classes
+                    '.sr-only', '.screen-reader-text', '.visually-hidden',
+                    // Additional selectors for potentially hidden but important content
+                    '[role="tabpanel"]', '[role="dialog"]', '[role="menu"]',
+                    '[role="tooltip"]', '[role="alert"]', '[role="status"]'
                 ];
                 
                 // Explicitly open all details elements to ensure content is visible in PDF
@@ -493,6 +605,74 @@ def _expand_hidden_elements(page: Page) -> None:
             logger.warning(f"URL changed to {page.url} after popup removal, attempting to navigate back")
             page.goto(current_url, wait_until="networkidle", timeout=30000)
         
+        # Process any additional accessibility-specific content
+        logger.info("Processing additional accessibility features")
+        page.evaluate("""() => {
+            // Function to process elements that might have alternative text representations
+            const processAccessibilityText = () => {
+                // 1. Make aria-label content visible when it might contain useful information
+                document.querySelectorAll('[aria-label]:not(img):not(input):not(button)').forEach(el => {
+                    const ariaLabel = el.getAttribute('aria-label');
+                    // Only process substantive aria-labels (not just "close" or "menu")
+                    if (ariaLabel && ariaLabel.length > 15 && !el.textContent.includes(ariaLabel)) {
+                        // Create a visible representation of the aria-label text
+                        const labelEl = document.createElement('div');
+                        labelEl.textContent = ariaLabel;
+                        labelEl.style.padding = '0.5em';
+                        labelEl.style.margin = '0.5em 0';
+                        labelEl.style.borderLeft = '3px solid #666';
+                        labelEl.style.backgroundColor = '#f0f0f0';
+                        labelEl.style.fontStyle = 'italic';
+                        labelEl.style.fontSize = '0.9em';
+                        
+                        // Add the label text visibly near the element
+                        el.appendChild(labelEl);
+                    }
+                });
+                
+                // 2. Make aria-description content visible
+                document.querySelectorAll('[aria-description]').forEach(el => {
+                    const description = el.getAttribute('aria-description');
+                    if (description && description.length > 10) {
+                        const descEl = document.createElement('div');
+                        descEl.textContent = description;
+                        descEl.style.color = '#666';
+                        descEl.style.fontStyle = 'italic';
+                        descEl.style.margin = '0.3em 0';
+                        el.appendChild(descEl);
+                    }
+                });
+                
+                // 3. Look for longdesc attributes on images (rarely used but valuable)
+                document.querySelectorAll('img[longdesc]').forEach(img => {
+                    const longdesc = img.getAttribute('longdesc');
+                    if (longdesc) {
+                        const descEl = document.createElement('div');
+                        descEl.textContent = `Image description: ${longdesc}`;
+                        descEl.style.fontStyle = 'italic';
+                        descEl.style.margin = '0.5em 0';
+                        descEl.style.maxWidth = img.width + 'px';
+                        img.parentNode.insertBefore(descEl, img.nextSibling);
+                    }
+                });
+                
+                // 4. Process figure elements with figcaption to ensure captions are visible
+                document.querySelectorAll('figure').forEach(fig => {
+                    const caption = fig.querySelector('figcaption');
+                    if (caption) {
+                        caption.style.display = 'block';
+                        caption.style.visibility = 'visible';
+                        caption.style.margin = '0.5em 0';
+                    }
+                });
+            };
+            
+            processAccessibilityText();
+        }""")
+        
+        # Allow time for accessibility processing
+        page.wait_for_timeout(500)
+        
         # Multiple passes with more specific selectors that might trigger UI updates
         logger.info("Performing multiple passes of interactive element expansion")
         
@@ -570,13 +750,42 @@ def _expand_hidden_elements(page: Page) -> None:
             page.wait_for_timeout(800)
         
         # Do one final expansion pass after everything else is done
-        logger.info("Performing final expansion pass")
+        logger.info("Performing final expansion pass with accessibility focus")
         page.evaluate("""() => {
             const expandFinalElements = () => {
                 // Force-expand any remaining elements by looking for specific CSS patterns
                 document.querySelectorAll('[style*="height: 0"]').forEach(el => {
                     el.style.height = 'auto';
                     el.style.maxHeight = 'none';
+                });
+                
+                // Final accessibility-specific processing
+                // 1. Process any remaining ARIA live regions which often contain dynamic content
+                document.querySelectorAll('[aria-live]').forEach(el => {
+                    el.style.display = 'block';
+                    el.style.visibility = 'visible';
+                    el.style.height = 'auto';
+                    el.style.overflow = 'visible';
+                });
+                
+                // 2. Look for any element with aria attributes that might contain hidden content
+                document.querySelectorAll('[aria-describedby], [aria-details], [aria-labelledby]').forEach(el => {
+                    // Process elements referenced by ID in these attributes
+                    ['aria-describedby', 'aria-details', 'aria-labelledby'].forEach(attr => {
+                        const ids = el.getAttribute(attr);
+                        if (ids) {
+                            ids.split(/\s+/).forEach(id => {
+                                const referenced = document.getElementById(id);
+                                if (referenced) {
+                                    referenced.style.display = 'block';
+                                    referenced.style.visibility = 'visible';
+                                    referenced.style.height = 'auto';
+                                    referenced.style.overflow = 'visible';
+                                    referenced.style.position = 'static';
+                                }
+                            });
+                        }
+                    });
                 });
                 
                 document.querySelectorAll('[style*="display: none"]').forEach(el => {
