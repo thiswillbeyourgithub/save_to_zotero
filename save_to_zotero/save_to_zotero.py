@@ -462,15 +462,48 @@ class SaveToZotero:
                 page = browser.new_page()
                 try:
                     logger.info(f"Fetching page title for {self.url}")
-                    page.goto(self.url, wait_until="networkidle", timeout=30000)
+                    try:
+                        # First try with domcontentloaded which is more reliable
+                        page.goto(self.url, wait_until="domcontentloaded", timeout=30000)
+                        # Add a small delay to allow more content to load
+                        page.wait_for_timeout(2000)
+                        
+                        # Check if we need more time for dynamic content
+                        if not page.title():
+                            logger.info("Initial page load completed, waiting for more content...")
+                            # Try to wait for more elements to become visible
+                            try:
+                                # Wait for any h1/h2 headers that might contain title information
+                                page.wait_for_selector('h1, h2, header', timeout=5000, state='visible')
+                            except Exception as e:
+                                logger.debug(f"No headers found, continuing anyway: {e}")
+                    except Exception as e:
+                        logger.warning(f"Error with domcontentloaded strategy: {e}")
+                        # Fallback to load event
+                        logger.info("Trying fallback loading strategy...")
+                        page.goto(self.url, wait_until="load", timeout=30000)
+                        page.wait_for_timeout(2000)
+                    
                     title = page.title()
                     if title:
                         payload["title"] = title
+                    else:
+                        logger.warning(f"Could not get page title for {self.url}")
 
                     # Get more metadata
                     metadata = get_webpage_metadata(page, self.url)
                     if "title" in metadata and metadata["title"]:
                         payload["title"] = metadata["title"]
+                    
+                    # Make sure we have some content before proceeding
+                    body_content = page.content()
+                    if len(body_content) < 100:
+                        logger.warning("Page content seems minimal, waiting a bit longer...")
+                        page.wait_for_timeout(5000)
+                        # Try one more metadata extraction
+                        metadata = get_webpage_metadata(page, self.url)
+                        if "title" in metadata and metadata["title"]:
+                            payload["title"] = metadata["title"]
 
                 finally:
                     browser.close()
