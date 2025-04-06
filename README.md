@@ -188,6 +188,7 @@ export ZOTERO_CONNECTOR_PORT="23119"  # Default connector port
 export ZOTERO_USER_AGENT="your_custom_user_agent"  # Optional
 export ZOTERO_BROWSER_USER_DATA_DIR="/path/to/user/data/dir"  # Optional: for persistent cookies/login sessions
 export SAVE_TO_ZOTERO_HEADLESS="false"  # Optional: set to "false" to run browser in visible mode
+export SAVE_TO_ZOTERO_DEBUG="true"  # Optional: enable debugger on unhandled exceptions
 ```
 
 ## Configuration
