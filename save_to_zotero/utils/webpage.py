@@ -115,11 +115,31 @@ def save_webpage_as_pdf(url: str, output_path: str, wait_for_load: int = 5000, v
             time.sleep(random.randint(100, 500) / 1000)
 
             logger.info(f"Navigating to {url}")
-            # Navigate to the URL with a timeout
-            page.goto(url, wait_until="networkidle", timeout=45000)
-
-            # Use consistent wait time
+            # Try to navigate with a more reliable strategy using fallbacks
+            try:
+                # First try with "load" which is more reliable than "networkidle"
+                logger.info("Attempting navigation with 'load' strategy")
+                page.goto(url, wait_until="load", timeout=30000)
+            except Exception as e:
+                logger.warning(f"Initial navigation attempt failed: {str(e)}")
+                # Fallback to "domcontentloaded" which is less strict
+                logger.info("Falling back to 'domcontentloaded' strategy")
+                page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            
+            # After navigation, perform additional stability checks
+            logger.info(f"Basic navigation complete, stabilizing page...")
+            
+            # Wait for the page to stabilize 
             page.wait_for_timeout(wait_for_load)
+            
+            # Additional check for content loading
+            try:
+                # Wait for common content indicators (heading elements and paragraphs)
+                page.wait_for_selector("h1, h2, p", timeout=5000)
+                logger.info("Content elements detected on page")
+            except Exception as e:
+                logger.warning(f"Could not detect common content elements: {str(e)}")
+                # Continue anyway, as some sites might have unusual structures
 
             # Simulate human-like scrolling behavior
             _simulate_scrolling(page)
