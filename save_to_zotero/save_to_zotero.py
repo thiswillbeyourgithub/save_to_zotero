@@ -474,7 +474,7 @@ class SaveToZotero:
             # Make the request to the Zotero connector
             response = requests.post(connector_url, json=payload, timeout=600)
 
-            assert response.status_code in [200, 201], response.status_code
+            assert response.status_code in [200, 201], f"Server Error: {response.status_code} ({response.reason})"
             logger.info(
                 f"Snapshot saved successfully (status code: {response.status_code})"
             )
