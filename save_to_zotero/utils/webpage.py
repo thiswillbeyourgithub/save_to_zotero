@@ -605,9 +605,53 @@ def _expand_hidden_elements(page: Page) -> None:
             logger.warning(f"URL changed to {page.url} after popup removal, attempting to navigate back")
             page.goto(current_url, wait_until="networkidle", timeout=30000)
         
-        # Process any additional accessibility-specific content
-        logger.info("Processing additional accessibility features")
+        # Process any additional accessibility-specific content and ensure details are expanded
+        logger.info("Processing additional accessibility features and expanding details elements")
         page.evaluate("""() => {
+            // Additional specific pass just for details elements to make sure they're expanded
+            const forceExpandDetails = () => {
+                // Use all possible techniques to expand details elements
+                document.querySelectorAll('details').forEach(el => {
+                    // Force open using attribute, property, and style
+                    el.setAttribute('open', 'true');
+                    el.open = true;
+                    el.style.display = 'block';
+                    
+                    // Make the content visible by finding the summary and forcing all siblings visible
+                    const summary = el.querySelector('summary');
+                    if (summary) {
+                        // Try to trigger a click on the summary
+                        try {
+                            summary.click();
+                        } catch(e) {}
+                        
+                        // Force display for all content after the summary
+                        let sibling = summary.nextElementSibling;
+                        while (sibling) {
+                            sibling.style.display = 'block';
+                            sibling.style.visibility = 'visible';
+                            sibling.style.height = 'auto';
+                            sibling.style.maxHeight = 'none';
+                            sibling.style.opacity = '1';
+                            sibling = sibling.nextElementSibling;
+                        }
+                    }
+                    
+                    // As a fallback, make all children visible
+                    Array.from(el.children).forEach(child => {
+                        if (child.tagName !== 'SUMMARY') {
+                            child.style.display = 'block';
+                            child.style.visibility = 'visible';
+                        }
+                    });
+                });
+            };
+            
+            // Run details expansion immediately and again with a delay
+            forceExpandDetails();
+            setTimeout(forceExpandDetails, 500);
+            setTimeout(forceExpandDetails, 1000);
+            
             // Function to process elements that might have alternative text representations
             const processAccessibilityText = () => {
                 // 1. Make aria-label content visible when it might contain useful information
@@ -741,6 +785,50 @@ def _expand_hidden_elements(page: Page) -> None:
 
             # Increasing timeouts for each pass to allow cascading elements to appear
             page.wait_for_timeout(500 + 300 * pass_num)
+        
+        # Make one dedicated pass for details elements right before PDF generation
+        logger.info("Final details element expansion pass")
+        page.evaluate("""() => {
+            // Function to force open details with multiple techniques
+            const finalExpandDetails = () => {
+                document.querySelectorAll('details').forEach(el => {
+                    // 1. Set the open attribute and property
+                    el.setAttribute('open', 'true');
+                    el.open = true;
+                    
+                    // 2. Force display of all children
+                    Array.from(el.children).forEach(child => {
+                        child.style.display = 'block';
+                        child.style.visibility = 'visible';
+                        child.style.height = 'auto';
+                    });
+                    
+                    // 3. Add inline CSS to force open state
+                    el.style.cssText += '; display: block !important; height: auto !important; visibility: visible !important;';
+                    
+                    // 4. Try to click the summary as a last resort
+                    const summary = el.querySelector('summary');
+                    if (summary) {
+                        try { summary.click(); } catch (e) {}
+                        
+                        // Force visibility of all non-summary content
+                        let sibling = summary.nextElementSibling;
+                        while (sibling) {
+                            sibling.style.cssText += '; display: block !important; visibility: visible !important; height: auto !important;';
+                            sibling = sibling.nextElementSibling;
+                        }
+                    }
+                });
+            };
+            
+            // Run the expansion multiple times to catch any that might be added dynamically
+            finalExpandDetails();
+            setTimeout(finalExpandDetails, 300);
+            setTimeout(finalExpandDetails, 700);
+        }""")
+        
+        # Add sufficient delay to ensure details expansions take effect visually
+        page.wait_for_timeout(1000)
         
         # Final check to ensure we're still on the original page
         if page.url != current_url:
