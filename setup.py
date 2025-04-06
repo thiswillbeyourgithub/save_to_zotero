@@ -29,7 +29,7 @@ with open("README.md", "r") as readme:
 
 setup(
     name="save_to_zotero",
-    version="1.1.6",
+    version="1.2.0",
     description="Save webpages as PDFs and add them to Zotero",
     long_description=long_description,
     long_description_content_type="text/markdown",
