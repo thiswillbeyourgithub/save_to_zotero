@@ -7,3 +7,4 @@ __pycache__
 dist
 **/*.log
 *.pdf
+./author_zotero_url_list
