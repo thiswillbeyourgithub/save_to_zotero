@@ -8,6 +8,16 @@ import requests
 from pathlib import Path
 from loguru import logger
 import platformdirs
+import os
+import pdb
+
+if bool(os.environ.get("SAVE_TO_ZOTERO_DEBUG", False)):
+    def excepthook(type, value, tb):
+        """Custom exception hook that starts a debugger on unhandled exceptions"""
+        sys.excepthook = sys.__excepthook__  # Prevent recursive errors
+        pdb.post_mortem(tb)
+
+    sys.excepthook = excepthook
 
 # Use platformdirs for standard platform-specific directories
 APP_NAME = "save_to_zotero"
