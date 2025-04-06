@@ -439,9 +439,29 @@ def _expand_hidden_elements(page: Page) -> None:
                     '[role="tooltip"]', '[role="alert"]', '[role="status"]'
                 ];
                 
-                // Explicitly open all details elements to ensure content is visible in PDF
+                // Expand details elements multiple ways to ensure they're visible in the PDF
                 document.querySelectorAll('details').forEach(el => {
-                    el.setAttribute('open', 'true');
+                    // Set both the open attribute and property
+                    el.setAttribute('open', 'true');  
+                    el.open = true;
+                    
+                    // Force display of the details content
+                    el.style.display = 'block';
+                    
+                    // Also directly target and force-show the summary's sibling content
+                    const summary = el.querySelector('summary');
+                    if (summary) {
+                        // Force all siblings of summary to be visible
+                        let sibling = summary.nextElementSibling;
+                        while (sibling) {
+                            sibling.style.display = 'block';
+                            sibling.style.visibility = 'visible';
+                            sibling.style.height = 'auto';
+                            sibling.style.maxHeight = 'none';
+                            sibling.style.opacity = '1';
+                            sibling = sibling.nextElementSibling;
+                        }
+                    }
                 });
                 
                 showSelectors.forEach(selector => {
