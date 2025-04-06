@@ -56,6 +56,7 @@ class SaveToZotero:
         connector_port: Optional[int] = None,
         tags: str = "save_to_zotero",
         verbose: bool = False,
+        keep_going: bool = False,
         *arg,
     ):
         """
@@ -74,6 +75,7 @@ class SaveToZotero:
             connector_port: Zotero connector port (defaults to ZOTERO_CONNECTOR_PORT environment variable or 23119)
             tags: Comma-separated list of tags to add to the item (defaults to "save_to_zotero")
             verbose: Enable verbose logging
+            keep_going: Continue execution even if HTTP requests fail with unexpected status codes
             *arg: If present, url and path must not be set: either the url to the webpage or the path to the pdf file.
 
         """
@@ -132,6 +134,8 @@ class SaveToZotero:
         )
         self.tags = tags.split(",") if tags else []
         self.verbose = verbose
+        self.keep_going = keep_going
+        self._http_error = None  # Will store error details if keep_going is True
 
         # Extract domain from URL for file naming or use filename for PDF
         if self.url:
@@ -213,6 +217,13 @@ class SaveToZotero:
             time.sleep(1)
             webpage = self.zot.item(webpage_key)
             metadata["save_to_zotero_version"] = self.VERSION
+            
+            # Add HTTP error information to metadata if available
+            if self._http_error:
+                logger.info("Adding HTTP error information to metadata")
+                for key, value in self._http_error.items():
+                    metadata[key] = value
+                
             webpage["data"]["extra"] = "\n".join(
                 [f"{k}: {v}" for k, v in metadata.items()]
             )
@@ -474,7 +485,20 @@ class SaveToZotero:
             # Make the request to the Zotero connector
             response = requests.post(connector_url, json=payload, timeout=600)
 
-            assert response.status_code in [200, 201], f"Server Error: {response.status_code} ({response.reason})"
+            if response.status_code not in [200, 201]:
+                error_msg = f"Server Error: {response.status_code} ({response.reason})"
+                if self.keep_going:
+                    logger.error(error_msg)
+                    # Create an error metadata to be stored later
+                    self._http_error = {
+                        "error_status_code": response.status_code,
+                        "error_reason": response.reason,
+                        "error_url": self.url,
+                        "error_time": datetime.now().isoformat(),
+                    }
+                else:
+                    assert False, error_msg
+            
             logger.info(
                 f"Snapshot saved successfully (status code: {response.status_code})"
             )
