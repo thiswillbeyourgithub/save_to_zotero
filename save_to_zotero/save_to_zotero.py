@@ -570,7 +570,7 @@ class SaveToZotero:
         temp_filename = f"{self.domain}_{int(time.time())}.pdf"
         pdf_path = pdf_dir / temp_filename
 
-		metadata = None
+        metadata = None
         if self.url:
             # Save the webpage as PDF
             metadata = save_webpage_as_pdf(self.url, str(pdf_path), self.wait, self.verbose)
