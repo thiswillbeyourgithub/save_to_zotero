@@ -37,7 +37,6 @@ setup(
     url="https://github.com/thiswillbeyourgithub/save_to_zotero",
     packages=find_packages(),
     include_package_data=True,
-    license="GPLv3",
     keywords=[
         "zotero",
         "research",
@@ -69,7 +68,6 @@ setup(
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
